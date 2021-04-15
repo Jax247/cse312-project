@@ -13,7 +13,7 @@ function sendMessage() {
     chatBox.focus();
     if (comment !== "") {
         let pathFront = '/conversation/';
-        socket.send(JSON.stringify({'senderToken': token, 'userRecvid': window.location.pathname.substr(pathFront.length), 'message': comment}));
+        socket.send(JSON.stringify({'senderToken': token, 'userRecvid': recvId, 'message': comment, 'dm':true}));
     }
 }
 
@@ -37,16 +37,17 @@ function getCookie(cname) {
 
 let socket;
 let token;
+let recvId;
 
 function startWebsocket() {
     console.log("STARTING SOCKET");
     token = getCookie("sessionToken");
 
     socket = new WebSocket('ws://' + window.location.host + '/websocketDM');
-
-
+    let pathFront = '/conversation/';
+    recvId = window.location.pathname.substr(pathFront.length)
     socket.onopen = function (event) {
-        socket.send(JSON.stringify({'notify': token, 'dm': true}));
+        socket.send(JSON.stringify({'dmnotify': token, 'dm': true, 'userRecvid': recvId}));
     };
 
 // Call the addMessage function whenever data is received from the server over the WebSocket
@@ -70,11 +71,11 @@ function startWebsocket() {
     });
 
 
-    socket.onmessage(function (type) {
-        console.log("MESSAGE EVT");
-        console.log(type);
-        console.log(type.toString());
-
-    });
+    // socket.onmessage(function (type) {
+    //     console.log("MESSAGE EVT");
+    //     console.log(type);
+    //     console.log(type.toString());
+    //
+    // });
 //socket.onmessage = addMessage;
 }

@@ -14,6 +14,10 @@ class User{
         this.chats.set(username, []);
     }
 
+    addMessageToChat(chatWith, message) {
+        this.chats.get(chatWith).push(message);
+    }
+
     setSocket(sock) {
         this.socket = sock
     }

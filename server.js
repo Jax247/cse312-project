@@ -91,15 +91,34 @@ net.createServer(function (socket) {
     let lines;
     let tempHeaders;
     let contentLength;
-    socket.on('error', function (list) {
-        upgradedUsers.delete(socket.remoteAddress + socket.remotePort.toString());
-        console.log(socket.remoteAddress + " : " + socket.remotePort);
-        console.log("SOCKET CLOSE");
-    });
 
     socket.on('end', function (list) {
+
+
         console.log("SOECKT end");
     });
+    socket.on("error", function (list) {
+
+
+        console.log("SOECKT end");
+    });
+
+    socket.on('close', function (list) {
+        //Go thru tokenList and delete pair with matching Socket
+        // upgradedUsers.delete(socket.remoteAddress + socket.remotePort.toString());
+        //
+        // for (let [key, value] of tokenUsers) {
+        //     if (value.socket === socket) {
+        //         console.log("MATCHING SOCKET");
+        //         tokenUsers.delete(key);
+        //     }
+        //     //console.log("WE ARE IN LOOP");
+        //     //console.log(value.socket.remoteAddress);
+        //     //console.log(value.socket.remotePort);
+        // }
+        console.log("SOECKT CLOSE");
+    });
+
 
     socket.on("data", function (data) {
         //console.log("CLIENT PORT: " + socket.remotePort);
@@ -220,7 +239,6 @@ function sendCookie(username, socket) {
         tokenUsers.set(token, newUser);
 
     }
-
 
     let content = fs.readFileSync('./index.html');
     let cookie = "HTTP/1.1 301 OK\r\n" +
@@ -394,12 +412,26 @@ function handleAsWebsocket(socket, data) {
                 //likeOrDisLike()
 
                 //handle Direct message seperate
-            }else if (tokenUsers.has(jTemp.notify) && jTemp.dm === true) {
+            }else if (jTemp.dm === true) {
+
                 //TODO:
-                handleDirectMessage(jTemp);
-                tokenUsers.get(jTemp.notify).setSocket(socket);
-                console.log("HANDLING dms");
-                return;
+                if (tokenUsers.has(jTemp.dmnotify)) {
+                    tokenUsers.get(jTemp.dmnotify).setSocket(socket);
+                    let currUser = tokenUsers.get(jTemp.dmnotify).username;
+                    console.log("USER TO RECV: " + jTemp.userRecvid);
+                    if (allUsers.get(currUser).chats.has(jTemp.userRecvid)) {
+                        console.log("SHOULD SEND MESSAGE");
+                        let messages = allUsers.get(currUser).chats.get(jTemp.userRecvid);
+                        messages.forEach(message =>
+                            socket.write(createWebsocketFrame(new Message(message, frameType))));
+                        return;
+                    }
+                } else {
+                    handleDirectMessage(jTemp);
+                    console.log("HANDLING dms");
+                    return;
+                }
+
 
 
 
@@ -465,7 +497,40 @@ function handleAsWebsocket(socket, data) {
 //TODO: CHECK IF THEY HAVE EXISTING CONVERSATION
 //TODO: SAVE MESSAGES TO THEIR CHAT
 function handleDirectMessage(jObject) {
+    console.log("HANDLING")
 
+    if (tokenUsers.has(jObject.senderToken)) {
+
+        let senderName = tokenUsers.get(jObject.senderToken).username;
+        let recvName = jObject.userRecvid;
+        let sendUser = allUsers.get(senderName);
+        let recvUser = allUsers.get(recvName);
+
+        if (!sendUser.chats.has(recvName)) {
+            //Add the message to current Map
+
+            //TODO: Uncomment recv Stuff
+            sendUser.addChat(recvName);
+            //recvUser.addChat(senderName);
+        }
+
+
+        let messageToSave = JSON.stringify({'sender': senderName, 'messageContent': jObject.message});
+
+        sendUser.addMessageToChat(recvName, messageToSave);
+       // recvUser.addMessageToChat(senderName, messageToSave);
+
+
+        //allUsers.set(recvName, recvUser);
+        allUsers.set(senderName, sendUser);
+
+        tokenUsers.get(jObject.senderToken).socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
+        console.log(sendUser);
+        console.log("USER:")
+
+        //console.log(allUsers.get(recvName).chats);
+
+    }
 
 }
 
@@ -793,6 +858,7 @@ function paths(check, socket, port, lines) {
             response = buildResponseNotFound("Not Found")
             break;
         case '/websocketDM':
+            //sendCookie('temp',socket );
             console.log("IS DM");
         case "/websocket":
             response = createHandshake(socket, lines);
