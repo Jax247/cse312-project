@@ -6,9 +6,9 @@ class Message{
         this.likeCount = likeCount;
     }
 
-    updateLike(count) {
+    updateLike() {
         let jSend = JSON.parse(this.data.toString());
-        jSend['likeCount'] = count;
+        jSend['likeCount'] = this.likeCount;
         this.data = JSON.stringify(jSend);
 
     }

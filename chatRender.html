@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<script src="dmFunctions.js"></script>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <div> THIS IS THE CHAT SCREEN</div>
+
+</head>
+<body onload="startWebsocket();">
+
+<label for="chat-name">Name: </label>
+<input id="chat-name" type="text" name="name">
+<br/>
+<label for="chat-comment">Comment: </label>
+<input id="chat-comment" type="text" name="comment">
+
+<button onclick="sendMessage()">Chat</button>
+
+
+</body>
+</html>

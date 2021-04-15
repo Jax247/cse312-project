@@ -18,12 +18,15 @@ availPaths.set('/image-upload', 'redirect');
 availPaths.set('/utf.txt', 'content')
 availPaths.set('/style.css', 'content');
 availPaths.set('/function.js', 'content');
+availPaths.set('/conversation/dmFunctions.js', 'content');
 availPaths.set('/images', 'content');
 availPaths.set('/image', 'content');
 availPaths.set('/User_Uploads', 'content');
 availPaths.set('/websocket', '/websocket');
+availPaths.set('/websocketDM', '/websocketDM');
 availPaths.set('/register', 'redirect');
 availPaths.set('/registerNewAccount', 'redirect');
+availPaths.set('/chatScreen', 'content');
 
 let content = new Map();
 content.set('/hello', ["Hello World!", "text/plain", false, "ascii"]);
@@ -34,7 +37,10 @@ content.set('/image', ["./image", "image/jpeg \r\nX-Content-Type-Options: nosnif
     true, "utf8"])
 content.set("/style.css", ["./style.css", "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/function.js", ["./function.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
+content.set("/conversation/dmFunctions.js", ["./dmFunctions.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/images", ["null", "text/html; \r\nX-Content-Type-Options: nosniff", false, "utf8"])
+content.set('/chatScreen', []);
+
 
 
 let redirects = new Map();
@@ -63,9 +69,9 @@ let userUploads = [];
 
 let upgradedUsers = new Map();
 let messageHistory = [];
-
-let loggedInUsers = new Map();
-
+//All users ever
+let allUsers = new Map();
+//All active users
 let tokenUsers = new Map();
 
 
@@ -116,7 +122,6 @@ net.createServer(function (socket) {
                 waitingForContent = false;
             }
         }
-        console.log(loggedInUsers.has(socket.remoteAddress.toString() + socket.remotePort.toString()))
 
         if (!waitingForContent) {
             if (upgradedUsers.has(socket.remoteAddress + socket.remotePort.toString())) {
@@ -132,6 +137,8 @@ net.createServer(function (socket) {
                 const port = lines[1].split(':')[2];
 
                 if (checkForCookie(lines)) {
+                    console.log("FOUND COOKIE");
+                    console.log(lines)
                     //console.log("REGULAR CLIENT");
 
 
@@ -173,7 +180,12 @@ function notLoggedInHandler(path, socket, port, lines, data) {
                 let password = formAsList[1].content.toString();
                 //Still need to add check of user and password leng for now good
                 createUserInDB(formAsList[0].content.toString(), formAsList[1].content.toString());
+
+
+                //Send cookie which adds their session token
                 sendCookie(userName, socket);
+
+
             }
             break
         case '/register?':
@@ -196,7 +208,18 @@ function sendCookie(username, socket) {
         Math.random().toString(36).substr(3, 9);
 
     //needs to be beefed up or could work?
-    tokenUsers.set(token, new User(username, token,socket, []));
+
+
+    if (allUsers.has(username)) {
+        tokenUsers.set(token, allUsers.get(username));
+        console.log("RETURNING USER");
+    } else {
+        console.log("NEW USERS");
+        let newUser = new User(username, token, socket, []);
+        allUsers.set(username, newUser)
+        tokenUsers.set(token, newUser);
+
+    }
 
 
     let content = fs.readFileSync('./index.html');
@@ -243,7 +266,7 @@ function usernameExists(username) {
     return doesExist;
 }
 
-//Need to do some salt
+//TODO: CREATE USER IN DB
 function createUserInDB(username, password) {
     MongoClient.connect(url, function (err, db) {
         if (err) throw err;
@@ -347,6 +370,7 @@ function handleAsWebsocket(socket, data) {
                 .replace(/>/g, "&gt;");
 
             let jTemp = JSON.parse(DECODED);
+            let currUserToken;
             if (jTemp.like === 'sent') {
 
                 frameType = 'like';
@@ -354,6 +378,7 @@ function handleAsWebsocket(socket, data) {
                 console.log(pOut);
                 DECODED = pOut
             } else if (tokenUsers.has(jTemp['sessionToken'])) {
+                currUserToken = jTemp['sessionToken'];
 
 
                 //DECODED = DECODED.substr(0, DECODED.length - 1);
@@ -361,16 +386,37 @@ function handleAsWebsocket(socket, data) {
 
                 jTemp["id"] = idNum;
                 jTemp["likeCount"] = 0;
+                jTemp["userID"] = tokenUsers.get(currUserToken).username
                 delete jTemp['sessionToken'];
 
                 DECODED = JSON.stringify(jTemp);
                 console.log(DECODED);
                 //likeOrDisLike()
-            }else if (tokenUsers.has(jTemp.notify)) {
+
+                //handle Direct message seperate
+            }else if (tokenUsers.has(jTemp.notify) && jTemp.dm === true) {
+                //TODO:
+                handleDirectMessage(jTemp);
+                tokenUsers.get(jTemp.notify).setSocket(socket);
+                console.log("HANDLING dms");
+                return;
+
+
+
+            } else if (tokenUsers.has(jTemp.notify)) {
                 console.log("UPDATING USERS");
 
-                //In work
+
+                currUserToken = jTemp['notify'];
+
+                //TODO: Add to JSON object then keep this list up to date on client side
                 tokenUsers.get(jTemp.notify).setSocket(socket);
+                let tempLikes = JSON.stringify(Array.from(tokenUsers.get(currUserToken).likes.keys()));
+                console.log(tempLikes)
+
+                socket.write(createWebsocketFrame(new Message(tempLikes, frameType)));
+
+                console.log("UDATED");
                 return;
 
             } else {
@@ -383,7 +429,7 @@ function handleAsWebsocket(socket, data) {
 
             //socket.write(createWebsocketFrame(DECODED, 'image'));
         }
-        //console.log("PUSHING MESSAGE");
+        console.log("PUSHING MESSAGE");
 
 
         message = new Message(DECODED, frameType, messageHistory.length, 0);
@@ -398,7 +444,9 @@ function handleAsWebsocket(socket, data) {
 
         }
 
-        //TODO: MAKE SURE LIKE TRUE FALSE ONLY GOES TO SENDER
+        console.log("SENDING");
+
+
         for (let [key, value] of upgradedUsers) {
             //console.log("WE ARE IN LOOP");
             //console.log(value.socket.remoteAddress);
@@ -410,6 +458,31 @@ function handleAsWebsocket(socket, data) {
         //Image incoming
 
     }
+
+}
+
+
+//TODO: CHECK IF THEY HAVE EXISTING CONVERSATION
+//TODO: SAVE MESSAGES TO THEIR CHAT
+function handleDirectMessage(jObject) {
+
+
+}
+
+
+//TODO: go to user collection get user with username update their list of likes
+//TODO: ALSO UPDATE LIKE COUNT OF POST USING POST ID:
+function addLikeToMongo(username, postId) {
+    MongoClient.connect(url, function (err, db) {
+        if (err) throw err;
+        var dbo = db.db("mydb");
+        var myobj = {data: message.data, contentType: message.contentType};
+        dbo.collection("user").insertOne(myobj, function (err, res) {
+            if (err) throw err;
+            console.log("1 document inserted");
+            db.close();
+        });
+    });
 
 }
 
@@ -432,18 +505,25 @@ function handleLike(like) {
             doesLike = true;
         }
 
+        //TODO: check if works
+        //addLikeToMongo(tokenUsers.get(like.sessionToken).username, like.messageId);
 
-        messageHistory[parseInt(like.messageId)].updateLike(messageHistory[parseInt(like.messageId)].likeCount);
+        messageHistory[parseInt(like.messageId)].updateLike();
         totalLikes = messageHistory[parseInt(like.messageId)].likeCount;
         like["totalLike"] = totalLikes;
         like["doesLike"] = doesLike;
+        let tempToken = like['sessionToken'];
         delete like['sessionToken'];
 
+        console.log("GOING TO SEND: " + JSON.stringify(like));
+        tokenUsers.get(tempToken).socket.write(createWebsocketFrame(new Message(JSON.stringify(like))))
+
+
+        delete like['doesLike'];
         console.log(like);
         console.log("GETTING LIKE");
         console.log(messageHistory);
     }
-
     return JSON.stringify(like);
 }
 
@@ -457,8 +537,18 @@ function importFromMongo() {
             if (document) {
                 messageHistory.push(new Message(document.data, document.contentType, messageHistory.length, 0));
             }
-
         });
+
+
+        //TODO: IMPORT users into allUsers and populate each user field
+
+        // var user = dbo.collection('users').find();
+        // user.each(function (err, document) {
+        //     if (document) {
+        //         allUsers.push(new User(document.username, document.contentType, messageHistory.length, 0));
+        //     }
+        // });
+
 
     });
 
@@ -568,7 +658,14 @@ function postRequest(data, lines, requestPath, socket, port) {
     //console.log("END OF LINES");
 
     let response;
-    let formAsList = handleMultiPart(data, lines)
+    let userId;
+    if (requestPath.includes('/conversation')) {
+        requestPath = '/conversation'
+        userId = requestPath.substr(requestPath.length);
+    }
+
+
+    let formAsList = handleMultiPart(data, lines);
     switch (requestPath) {
         case "/image-upload":
 
@@ -624,6 +721,9 @@ function postRequest(data, lines, requestPath, socket, port) {
 
             response = buildRedirect('/', port);
             break;
+        case '/conversation':
+            console.log("SENDING CHAT RENDER");
+            response = buildHtmlResponse('./chatRender.html', []);
 
     }
     if (response) {
@@ -692,16 +792,23 @@ function paths(check, socket, port, lines) {
         case "false":
             response = buildResponseNotFound("Not Found")
             break;
+        case '/websocketDM':
+            console.log("IS DM");
         case "/websocket":
             response = createHandshake(socket, lines);
             console.log("INIT WEB SOCK");
             upgradedUsers.set(socket.remoteAddress + socket.remotePort.toString(), new Client(socket.remoteAddress, socket.remotePort, socket));
             console.log(messageHistory);
             //console.log(messageHistory.length);
-            for (let i = 0; i < messageHistory.length; i++) {
-                console.log("SENDING: " + messageHistory[i]);
-                socket.write(createWebsocketFrame(messageHistory[i]));
+            if (expr !== '/websocketDM') {
+                for (let i = 0; i < messageHistory.length; i++) {
+                    console.log("SENDING: " + messageHistory[i]);
+                    socket.write(createWebsocketFrame(messageHistory[i]));
+                }
             }
+
+
+
             return;
 
 

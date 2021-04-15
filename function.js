@@ -46,6 +46,14 @@ function addMessage(message) {
         let likeCount = document.createElement('p');
         likeCount.id = 'like' + chatMessage['id'].toString();
         likeCount.innerHTML = "LIKES: " + chatMessage['likeCount'];
+        let startForm = document.createElement('form');
+        startForm.action = "/conversation/" + chatMessage['userID'];
+        startForm.method = 'post';
+        startForm.enctype = "multipart/form-data";
+        let startButton = document.createElement('input');
+        startButton.type = 'submit';
+        startButton.value = 'Send Chat';
+        startForm.appendChild(startButton);
 
         let like = document.createElement('i');
         like.addEventListener('click', function () {
@@ -53,9 +61,10 @@ function addMessage(message) {
         });
         //like.onclick = sendLike(chatMessage['id']);
         like.className = 'fas fa-cloud';
-        contentContainer.innerHTML += "<b>" + chatMessage['username'] + "</b>: " + chatMessage["comment"]  + "<br/>";
+        contentContainer.innerHTML += "<b>" + chatMessage['username'] + "</b>: " + chatMessage["comment"] + " \n POSTED BY: " + chatMessage['userID'] + "<br/>";
         contentContainer.appendChild(like);
         contentContainer.appendChild(likeCount);
+        contentContainer.appendChild(startForm);
         document.getElementById('chat').appendChild(contentContainer);
 
     }
@@ -148,8 +157,6 @@ function startWebsocket() {
             sendMessage();
         }
     });
-
-
 
 
 }
