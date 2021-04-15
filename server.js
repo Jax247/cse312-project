@@ -94,18 +94,21 @@ net.createServer(function (socket) {
 
     socket.on('end', function (list) {
 
-
-        console.log("SOECKT end");
+        console.log("SOCKET end");
     });
     socket.on("error", function (list) {
-
-
-        console.log("SOECKT end");
+        console.log("SOCKET ERROR");
     });
 
     socket.on('close', function (list) {
         //Go thru tokenList and delete pair with matching Socket
-        // upgradedUsers.delete(socket.remoteAddress + socket.remotePort.toString());
+        if (socket) {
+            console.log(socket.remoteAddress);
+            console.log(socket.remotePort);
+            upgradedUsers.delete(socket.remoteAddress + socket.remotePort.toString());
+        } else {
+            console.log("SOCKET UNDEFINED");
+        }
         //
         // for (let [key, value] of tokenUsers) {
         //     if (value.socket === socket) {
@@ -121,6 +124,7 @@ net.createServer(function (socket) {
 
 
     socket.on("data", function (data) {
+        console.log("ACTIVE USERS: " + upgradedUsers.size)
         //console.log("CLIENT PORT: " + socket.remotePort);
         //console.log("NEW STUFF");
         //console.log(data.toString());
@@ -155,7 +159,7 @@ net.createServer(function (socket) {
 
                 const port = lines[1].split(':')[2];
 
-                if (checkForCookie(lines)) {
+                if (checkForToken(lines)) {
                     console.log("FOUND COOKIE");
                     console.log(lines)
                     //console.log("REGULAR CLIENT");
@@ -198,6 +202,7 @@ function notLoggedInHandler(path, socket, port, lines, data) {
                 let userName = formAsList[0].content.toString();
                 let password = formAsList[1].content.toString();
                 //Still need to add check of user and password leng for now good
+                //TODO:
                 createUserInDB(formAsList[0].content.toString(), formAsList[1].content.toString());
 
 
@@ -221,14 +226,13 @@ function notLoggedInHandler(path, socket, port, lines, data) {
 }
 
 function sendCookie(username, socket) {
+
     //Create Random Cookie
     let token = Math.random().toString(36).substr(3, 8) +
         Math.random().toString(36).substr(2, 20) +
         Math.random().toString(36).substr(3, 9);
 
     //needs to be beefed up or could work?
-
-
     if (allUsers.has(username)) {
         tokenUsers.set(token, allUsers.get(username));
         console.log("RETURNING USER");
@@ -248,7 +252,7 @@ function sendCookie(username, socket) {
     socket.write(cookie);
 }
 
-function checkForCookie(lines) {
+function checkForToken(lines) {
     console.log("CHECKING FOR COOKEI");
     let cookies = getHeaderInfo('Cookie:', lines);
     //console.log(getValueFromHeader('sessionToken=', cookies));
@@ -284,7 +288,7 @@ function usernameExists(username) {
     return doesExist;
 }
 
-//TODO: CREATE USER IN DB
+//TODO: CREATE USER IN DB need to salt
 function createUserInDB(username, password) {
     MongoClient.connect(url, function (err, db) {
         if (err) throw err;
@@ -511,18 +515,21 @@ function handleDirectMessage(jObject) {
 
             //TODO: Uncomment recv Stuff
             sendUser.addChat(recvName);
-            //recvUser.addChat(senderName);
+            recvUser.addChat(senderName);
         }
 
 
         let messageToSave = JSON.stringify({'sender': senderName, 'messageContent': jObject.message});
 
         sendUser.addMessageToChat(recvName, messageToSave);
-       // recvUser.addMessageToChat(senderName, messageToSave);
+        recvUser.addMessageToChat(senderName, messageToSave);
 
 
-        //allUsers.set(recvName, recvUser);
+        allUsers.set(recvName, recvUser);
         allUsers.set(senderName, sendUser);
+
+        //user Is on
+
 
         tokenUsers.get(jObject.senderToken).socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
         console.log(sendUser);
@@ -858,22 +865,19 @@ function paths(check, socket, port, lines) {
             response = buildResponseNotFound("Not Found")
             break;
         case '/websocketDM':
-            //sendCookie('temp',socket );
-            console.log("IS DM");
         case "/websocket":
             response = createHandshake(socket, lines);
             console.log("INIT WEB SOCK");
-            upgradedUsers.set(socket.remoteAddress + socket.remotePort.toString(), new Client(socket.remoteAddress, socket.remotePort, socket));
+            upgradedUsers.set(socket.remoteAddress + socket.remotePort.toString(), new Client(socket.remoteAddress, socket.remotePort,expr, socket));
             console.log(messageHistory);
             //console.log(messageHistory.length);
             if (expr !== '/websocketDM') {
                 for (let i = 0; i < messageHistory.length; i++) {
                     console.log("SENDING: " + messageHistory[i]);
+                    //message history really post history
                     socket.write(createWebsocketFrame(messageHistory[i]));
                 }
             }
-
-
 
             return;
 
