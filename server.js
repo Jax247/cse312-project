@@ -50,20 +50,6 @@ redirects.set('/image-upload', '/');
 redirects.set('/register', '/');
 redirects.set('/registerNewAccount', '/');
 
-
-var url = "mongodb://localhost:27017/";
-//var url = 'mongodb://mongo:27017';
-
-MongoClient.connect(url, function (err, db) {
-    if (err) throw err;
-    var dbo = db.db("mydb");
-
-    db.close();
-});
-//TODO: CHANGE HOW WE IMPORT A MESSAGE BY GETTING LIKES
-importFromMongo();
-
-
 let namesAndComments = [];
 let userUploads = [];
 
@@ -75,6 +61,22 @@ let allUsers = new Map();
 let tokenUsers = new Map();
 
 
+
+var url = "mongodb://localhost:27017/";
+//var url = 'mongodb://mongo:27017';
+
+MongoClient.connect(url, function (err, db) {
+    if (err) throw err;
+    var dbo = db.db("mydb");
+
+    db.close();
+});
+//TODO: CHANGE HOW WE IMPORT A MESSAGE BY GETTING LIKES
+importFromMongo()
+
+
+
+
 fs.readdirSync('./User_Uploads').forEach(upload => {
     fs.unlinkSync('./User_Uploads/' + upload);
 });
@@ -82,6 +84,8 @@ fs.readdirSync('./User_Uploads').forEach(upload => {
 net.createServer(function (socket) {
 
     console.log("SERVER STARTED");
+    console.log(messageHistory);
+    console.log(allUsers);
 
     //if the client is logged in do the usual
 
@@ -102,7 +106,8 @@ net.createServer(function (socket) {
 
     socket.on('close', function (list) {
         //Go thru tokenList and delete pair with matching Socket
-        if (socket) {
+        if (socket.remoteAddress) {
+
             console.log(socket.remoteAddress);
             console.log(socket.remotePort);
             upgradedUsers.delete(socket.remoteAddress + socket.remotePort.toString());
@@ -293,7 +298,7 @@ function createUserInDB(username, password) {
     MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
-        var user = {username: username, password: password};
+        var user = {username: username, password: password,  };
         dbo.collection("users").insertOne(user, function (err, res) {
             if (err) throw err;
             console.log("1 document inserted");
@@ -385,7 +390,6 @@ function handleAsWebsocket(socket, data) {
         let message;
         if (!isImage) {
 
-            frameType = 'text';
             DECODED = DECODED
                 .replace(/&/g, '&amp;')
                 .replace(/</g, "&lt;")
@@ -400,6 +404,8 @@ function handleAsWebsocket(socket, data) {
                 console.log(pOut);
                 DECODED = pOut
             } else if (tokenUsers.has(jTemp['sessionToken'])) {
+                frameType = 'post';
+
                 currUserToken = jTemp['sessionToken'];
 
 
@@ -417,11 +423,21 @@ function handleAsWebsocket(socket, data) {
 
                 //handle Direct message seperate
             }else if (jTemp.dm === true) {
+                frameType = 'dm';
+
 
                 //TODO:
                 if (tokenUsers.has(jTemp.dmnotify)) {
+
                     tokenUsers.get(jTemp.dmnotify).setSocket(socket);
-                    let currUser = tokenUsers.get(jTemp.dmnotify).username;
+                    upgradedUsers.get(socket.remoteAddress + socket.remotePort.toString()).sockType = '/websocketDM/' + jTemp.userRecvid;
+
+                    let currUser = tokenUsers.get(jTemp.dmnotify).username
+                    //allUsers.get(currUser).socket = socket;
+
+                    allUsers.get(currUser).location = 'websocketDM/'+jTemp.userRecvid ;
+                    allUsers.get(currUser).socket = socket;
+
                     console.log("USER TO RECV: " + jTemp.userRecvid);
                     if (allUsers.get(currUser).chats.has(jTemp.userRecvid)) {
                         console.log("SHOULD SEND MESSAGE");
@@ -430,6 +446,8 @@ function handleAsWebsocket(socket, data) {
                             socket.write(createWebsocketFrame(new Message(message, frameType))));
                         return;
                     }
+                    return;
+
                 } else {
                     handleDirectMessage(jTemp);
                     console.log("HANDLING dms");
@@ -442,11 +460,15 @@ function handleAsWebsocket(socket, data) {
             } else if (tokenUsers.has(jTemp.notify)) {
                 console.log("UPDATING USERS");
 
-
                 currUserToken = jTemp['notify'];
 
                 //TODO: Add to JSON object then keep this list up to date on client side
                 tokenUsers.get(jTemp.notify).setSocket(socket);
+                //upgradedUsers.get(socket.remoteAddress + socket.remotePort.toString()).sockType = '/websocket';
+
+                allUsers.get(tokenUsers.get(currUserToken).username).location = 'index';
+                allUsers.get(tokenUsers.get(currUserToken).username).socket = socket;
+
                 let tempLikes = JSON.stringify(Array.from(tokenUsers.get(currUserToken).likes.keys()));
                 console.log(tempLikes)
 
@@ -474,7 +496,7 @@ function handleAsWebsocket(socket, data) {
 
         if (frameType === 'like') {
 
-        } else {
+        } else if (frameType === 'post') {
             messageHistory.push(message);
             storeMessageInDB(message);
 
@@ -502,7 +524,9 @@ function handleAsWebsocket(socket, data) {
 //TODO: SAVE MESSAGES TO THEIR CHAT
 function handleDirectMessage(jObject) {
     console.log("HANDLING")
+    console.log(allUsers);
 
+    let tokenUser = tokenUsers.get(jObject.senderToken);
     if (tokenUsers.has(jObject.senderToken)) {
 
         let senderName = tokenUsers.get(jObject.senderToken).username;
@@ -522,17 +546,40 @@ function handleDirectMessage(jObject) {
         let messageToSave = JSON.stringify({'sender': senderName, 'messageContent': jObject.message});
 
         sendUser.addMessageToChat(recvName, messageToSave);
+
+        if (upgradedUsers.get()) {
+
+        }
+
+
         recvUser.addMessageToChat(senderName, messageToSave);
 
 
         allUsers.set(recvName, recvUser);
         allUsers.set(senderName, sendUser);
 
+        //addDirectMessageToMongo(senderName, recvName, messageToSave);
+
         //user Is on
+
+        if (tokenUsers.has(recvUser.sessionToken)) {
+            console.log("USER IS HERE");
+            if (recvUser.location === 'websocketDM/' + senderName) {
+                console.log("USER AT DM");
+                recvUser.socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
+            }else if (recvUser.location === 'index') {
+                console.log("USER AT INDEX");
+                recvUser.socket.write(createWebsocketFrame(new Message(JSON.stringify({hasMessage: senderName}), 'text')));
+
+            }
+        } else {
+            console.log("USER OFFLINE");
+        }
+
 
 
         tokenUsers.get(jObject.senderToken).socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
-        console.log(sendUser);
+        //console.log(sendUser);
         console.log("USER:")
 
         //console.log(allUsers.get(recvName).chats);
@@ -542,18 +589,63 @@ function handleDirectMessage(jObject) {
 }
 
 
-//TODO: go to user collection get user with username update their list of likes
-//TODO: ALSO UPDATE LIKE COUNT OF POST USING POST ID:
-function addLikeToMongo(username, postId) {
-    MongoClient.connect(url, function (err, db) {
+function addDirectMessageToMongo(send, recv, message) {
+
+
+    MongoClient.connect(url, function(err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
-        var myobj = {data: message.data, contentType: message.contentType};
-        dbo.collection("user").insertOne(myobj, function (err, res) {
+        var userQuery = {username: send};
+
+        let postReplace = {likeCount: messageHistory[parseInt(postId)].likeCount};
+
+
+        let tempSet = allUsers.get(username).likes;
+        let newValues = {$set: {likes: JSON.stringify([...tempSet.keys()])}};
+
+
+        dbo.collection("users").updateOne(userQuery, newValues, function (err, res) {
             if (err) throw err;
-            console.log("1 document inserted");
+            console.log("1 document updated");
+            //db.close();
+        });
+    });
+}
+
+
+//TODO: go to user collection get user with username update their list of likes
+//TODO: ALSO UPDATE LIKE COUNT OF POST USING POST ID:
+function addLikeToMongo(username, postId, doesLike) {
+    MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
+        var dbo = db.db("mydb");
+        var userQuery = {username: username };
+        let postQuery = {id: postId}
+
+
+        let postReplace = {$set: {likeCount: messageHistory[parseInt(postId)].likeCount}};
+
+
+        let tempSet = allUsers.get(username).likes;
+        let newValues = { $set: {likes: JSON.stringify([...tempSet.keys()]) } };
+
+
+
+        dbo.collection("users").updateOne(userQuery, newValues, function(err, res) {
+            if (err) throw err;
+            console.log("1 document updated");
+            //db.close();
+        });
+
+        dbo.collection("message").updateOne(postQuery, postReplace, function(err, res) {
+            if (err) throw err;
+            console.log("1 document updated");
             db.close();
         });
+
+
+
+
     });
 
 }
@@ -578,7 +670,7 @@ function handleLike(like) {
         }
 
         //TODO: check if works
-        //addLikeToMongo(tokenUsers.get(like.sessionToken).username, like.messageId);
+        addLikeToMongo(tokenUsers.get(like.sessionToken).username, like.messageId, doesLike);
 
         messageHistory[parseInt(like.messageId)].updateLike();
         totalLikes = messageHistory[parseInt(like.messageId)].likeCount;
@@ -599,19 +691,43 @@ function handleLike(like) {
     return JSON.stringify(like);
 }
 
-function importFromMongo() {
-    MongoClient.connect(url, function (err, db) {
+  function importFromMongo() {
+     MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
         console.log("GETTING COLLECTIOn");
+
         var col = dbo.collection('message').find();
-        col.each(function (err, document) {
+
+         col.each( function (err, document) {
             if (document) {
-                messageHistory.push(new Message(document.data, document.contentType, messageHistory.length, 0));
+                let jsonMessage = JSON.stringify(
+                    {
+                        username: document.username,
+                        comment: document.comment,
+                        id: document.id,
+                        likeCount: document.likeCount,
+                        userID: document.userID
+                    });
+                messageHistory.push(new Message(jsonMessage, document.contentType, messageHistory.length, document.likeCount));
             }
         });
 
+        console.log("MESSAGES")
 
+
+        console.log(messageHistory);
+
+        var users = dbo.collection('users').find();
+        users.each(function (err, document) {
+            if (document) {
+                let newUser = new User(document.username, "", "", document.likes);
+
+                allUsers.set(document.username, newUser)
+            }
+        });
+        console.log("ALL USERS");
+        console.log(allUsers);
         //TODO: IMPORT users into allUsers and populate each user field
 
         // var user = dbo.collection('users').find();
@@ -620,8 +736,7 @@ function importFromMongo() {
         //         allUsers.push(new User(document.username, document.contentType, messageHistory.length, 0));
         //     }
         // });
-
-
+        dbo.close
     });
 
 }
@@ -630,11 +745,20 @@ function storeMessageInDB(message) {
     MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
-        var myobj = {data: message.data, contentType: message.contentType};
+        let tempJson = JSON.parse(message.data);
+        var myobj =
+            {   username: tempJson.username,
+                comment: tempJson.comment,
+                contentType: message.contentType,
+                id:tempJson.id,
+                likeCount: tempJson.likeCount,
+                userID: tempJson.userID
+            };
+
         dbo.collection("message").insertOne(myobj, function (err, res) {
             if (err) throw err;
             console.log("1 document inserted");
-            db.close();
+            db.close;
         });
     });
 

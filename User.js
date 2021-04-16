@@ -1,8 +1,9 @@
 class User{
     constructor(userName, sessionToke, socket, likes) {
         this.username = userName;
-        this.sessionToke = sessionToke;
+        this.sessionToken = sessionToke;
         this.socket = socket;
+        this.location = "";
         this.likes = new Set();
         this.chats = new Map();
         this.posts = [];
