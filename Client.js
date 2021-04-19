@@ -4,5 +4,10 @@ class Client{
         this.clientPort = clientPort;
         this.sockType = expr;
         this.socket = socket;
+        this.userId = "";
+    }
+
+    setUserId(id){
+        this.userId = id;
     }
 } module.exports = Client

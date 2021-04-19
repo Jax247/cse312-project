@@ -27,6 +27,8 @@ availPaths.set('/websocketDM', '/websocketDM');
 availPaths.set('/register', 'redirect');
 availPaths.set('/registerNewAccount', 'redirect');
 availPaths.set('/chatScreen', 'content');
+availPaths.set('/profile', 'content');
+
 
 let content = new Map();
 content.set('/hello', ["Hello World!", "text/plain", false, "ascii"]);
@@ -40,8 +42,7 @@ content.set("/function.js", ["./function.js", "text/javascript; \r\nX-Content-Ty
 content.set("/conversation/dmFunctions.js", ["./dmFunctions.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/images", ["null", "text/html; \r\nX-Content-Type-Options: nosniff", false, "utf8"])
 content.set('/chatScreen', []);
-
-
+content.set('/profile', 'content');
 
 let redirects = new Map();
 redirects.set('/hi', "/hello");
@@ -49,6 +50,7 @@ redirects.set('/comment', '/');
 redirects.set('/image-upload', '/');
 redirects.set('/register', '/');
 redirects.set('/registerNewAccount', '/');
+
 
 let namesAndComments = [];
 let userUploads = [];
@@ -83,6 +85,7 @@ fs.readdirSync('./User_Uploads').forEach(upload => {
 
 net.createServer(function (socket) {
 
+
     console.log("SERVER STARTED");
     console.log(messageHistory);
     console.log(allUsers);
@@ -107,10 +110,11 @@ net.createServer(function (socket) {
     socket.on('close', function (list) {
         //Go thru tokenList and delete pair with matching Socket
         if (socket.remoteAddress) {
-
+            console.log("USER LEFT:");
             console.log(socket.remoteAddress);
             console.log(socket.remotePort);
             upgradedUsers.delete(socket.remoteAddress + socket.remotePort.toString());
+            sendActiveUsers();
         } else {
             console.log("SOCKET UNDEFINED");
         }
@@ -208,11 +212,13 @@ function notLoggedInHandler(path, socket, port, lines, data) {
                 let password = formAsList[1].content.toString();
                 //Still need to add check of user and password leng for now good
                 //TODO:
-                createUserInDB(formAsList[0].content.toString(), formAsList[1].content.toString());
+                let currUser = sendCookie(userName, socket);
+
+                createUserInDB(formAsList[0].content.toString(), formAsList[1].content.toString(), currUser);
+
 
 
                 //Send cookie which adds their session token
-                sendCookie(userName, socket);
 
 
             }
@@ -255,7 +261,25 @@ function sendCookie(username, socket) {
         "Set-Cookie: sessionToken=" + token + "\r\n\r\n";
 
     socket.write(cookie);
+
+    return allUsers.get(username);
+
 }
+
+function sendActiveUsers() {
+    let users = [];
+    upgradedUsers.forEach((values,keys)=>{
+        users.push(values.userId)
+    })
+    let sendMsg = JSON.stringify({activeUsers: upgradedUsers.size, userId:users})
+
+    for (let [ipPort, user] of upgradedUsers){
+        console.log("SENDING", sendMsg);
+        user.socket.write(createWebsocketFrame(new Message(sendMsg, 'text')));
+
+    }
+}
+
 
 function checkForToken(lines) {
     console.log("CHECKING FOR COOKEI");
@@ -294,11 +318,13 @@ function usernameExists(username) {
 }
 
 //TODO: CREATE USER IN DB need to salt
-function createUserInDB(username, password) {
+function createUserInDB(username, password, user) {
+    console.log("USER: " + user.chats);
     MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
-        var user = {username: username, password: password,  };
+
+        var user = {username: username, password: password, chats : "", posts: ""};
         dbo.collection("users").insertOne(user, function (err, res) {
             if (err) throw err;
             console.log("1 document inserted");
@@ -417,7 +443,7 @@ function handleAsWebsocket(socket, data) {
                 jTemp["userID"] = tokenUsers.get(currUserToken).username
                 delete jTemp['sessionToken'];
 
-                DECODED = JSON.stringify(jTemp);
+                DECODED = jTemp;
                 console.log(DECODED);
                 //likeOrDisLike()
 
@@ -432,6 +458,11 @@ function handleAsWebsocket(socket, data) {
                     tokenUsers.get(jTemp.dmnotify).setSocket(socket);
                     upgradedUsers.get(socket.remoteAddress + socket.remotePort.toString()).sockType = '/websocketDM/' + jTemp.userRecvid;
 
+                    upgradedUsers.get(socket.remoteAddress + socket.remotePort.toString())
+                        .setUserId(tokenUsers.get(jTemp.dmnotify).username.toString());
+
+
+                    sendActiveUsers();
                     let currUser = tokenUsers.get(jTemp.dmnotify).username
                     //allUsers.get(currUser).socket = socket;
 
@@ -465,6 +496,14 @@ function handleAsWebsocket(socket, data) {
                 //TODO: Add to JSON object then keep this list up to date on client side
                 tokenUsers.get(jTemp.notify).setSocket(socket);
                 //upgradedUsers.get(socket.remoteAddress + socket.remotePort.toString()).sockType = '/websocket';
+                upgradedUsers.get(socket.remoteAddress + socket.remotePort.toString())
+                    .setUserId(tokenUsers.get(jTemp.notify).username.toString());
+
+
+                sendActiveUsers();
+
+                console.log(upgradedUsers)
+
 
                 allUsers.get(tokenUsers.get(currUserToken).username).location = 'index';
                 allUsers.get(tokenUsers.get(currUserToken).username).socket = socket;
@@ -487,18 +526,28 @@ function handleAsWebsocket(socket, data) {
 
             //socket.write(createWebsocketFrame(DECODED, 'image'));
         }
-        console.log("PUSHING MESSAGE");
+
+        console.log("DECODED");
+        console.log(DECODED);
 
 
-        message = new Message(DECODED, frameType, messageHistory.length, 0);
+
+        message = new Message(JSON.stringify(DECODED), frameType, messageHistory.length, 0);
         sendFrame = createWebsocketFrame(message);
 
 
         if (frameType === 'like') {
 
         } else if (frameType === 'post') {
+
+            message.ownerId = DECODED.userID
+            allUsers.get(message.ownerId).addPosts(message.id);
+            //TODO: WRITE POST TO DB USER
             messageHistory.push(message);
-            storeMessageInDB(message);
+            console.log("MESSAGE: " + message.data);
+            storePost(message, message.ownerId);
+
+
 
         }
 
@@ -539,6 +588,8 @@ function handleDirectMessage(jObject) {
 
             //TODO: Uncomment recv Stuff
             sendUser.addChat(recvName);
+            console.log("RECV: " , recvUser)
+            console.log("SENDUSER: ", sendUser);
             recvUser.addChat(senderName);
         }
 
@@ -547,9 +598,9 @@ function handleDirectMessage(jObject) {
 
         sendUser.addMessageToChat(recvName, messageToSave);
 
-        if (upgradedUsers.get()) {
-
-        }
+        // if (upgradedUsers.get()) {
+        //
+        // }
 
 
         recvUser.addMessageToChat(senderName, messageToSave);
@@ -558,7 +609,7 @@ function handleDirectMessage(jObject) {
         allUsers.set(recvName, recvUser);
         allUsers.set(senderName, sendUser);
 
-        //addDirectMessageToMongo(senderName, recvName, messageToSave);
+        addDirectMessageToMongo(sendUser, recvUser, messageToSave);
 
         //user Is on
 
@@ -567,7 +618,8 @@ function handleDirectMessage(jObject) {
             if (recvUser.location === 'websocketDM/' + senderName) {
                 console.log("USER AT DM");
                 recvUser.socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
-            }else if (recvUser.location === 'index') {
+            //else if (recvUser.location === 'index')
+            } else {
                 console.log("USER AT INDEX");
                 recvUser.socket.write(createWebsocketFrame(new Message(JSON.stringify({hasMessage: senderName}), 'text')));
 
@@ -589,22 +641,35 @@ function handleDirectMessage(jObject) {
 }
 
 
-function addDirectMessageToMongo(send, recv, message) {
+function addDirectMessageToMongo(sendUser, recvUser, message) {
 
 
     MongoClient.connect(url, function(err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
-        var userQuery = {username: send};
-
-        let postReplace = {likeCount: messageHistory[parseInt(postId)].likeCount};
 
 
-        let tempSet = allUsers.get(username).likes;
-        let newValues = {$set: {likes: JSON.stringify([...tempSet.keys()])}};
+        var sendUserQuery = {username: sendUser.username};
+        console.log("CHATS: " + JSON.stringify([...sendUser.chats]));
+
+        let postReplace = {$set: {chats :JSON.stringify([...sendUser.chats])}};
 
 
-        dbo.collection("users").updateOne(userQuery, newValues, function (err, res) {
+        var recvUserQuery = {username: recvUser.username};
+        var recvMessages = {$set: {chats :JSON.stringify([...recvUser.chats])}};
+        // let tempSet = allUsers.get(username).likes;
+        // let newValues = {$set: {likes: JSON.stringify([...tempSet.keys()])}};
+
+
+        dbo.collection("users").updateOne(sendUserQuery, postReplace, function (err, res) {
+            if (err) throw err;
+            console.log("1 document updated");
+            //db.close();
+        });
+
+
+
+        dbo.collection("users").updateOne(recvUserQuery, recvMessages, function (err, res) {
             if (err) throw err;
             console.log("1 document updated");
             //db.close();
@@ -688,7 +753,7 @@ function handleLike(like) {
         console.log("GETTING LIKE");
         console.log(messageHistory);
     }
-    return JSON.stringify(like);
+    return like;
 }
 
   function importFromMongo() {
@@ -699,6 +764,7 @@ function handleLike(like) {
 
         var col = dbo.collection('message').find();
 
+        //Import Messages
          col.each( function (err, document) {
             if (document) {
                 let jsonMessage = JSON.stringify(
@@ -722,8 +788,16 @@ function handleLike(like) {
         users.each(function (err, document) {
             if (document) {
                 let newUser = new User(document.username, "", "", document.likes);
+                if (document.chats !== "") {
+                    console.log("SETTING");
+                    console.log((document.chats));
+                    newUser.setChats(jsonToMap(JSON.parse(document.chats)));
+                }
+                if (document.posts !== "") {
+                    newUser.posts = JSON.parse(document.posts);
+                }
 
-                allUsers.set(document.username, newUser)
+                allUsers.set(document.username, newUser);
             }
         });
         console.log("ALL USERS");
@@ -741,7 +815,19 @@ function handleLike(like) {
 
 }
 
-function storeMessageInDB(message) {
+function jsonToMap(tooDarr)  {
+
+    let resMap = new Map();
+
+    for (let arr in tooDarr) {
+        resMap.set(arr[0], arr[1]);
+    }
+
+    return resMap;
+}
+
+
+function storePost(message, ownerId) {
     MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
@@ -758,7 +844,17 @@ function storeMessageInDB(message) {
         dbo.collection("message").insertOne(myobj, function (err, res) {
             if (err) throw err;
             console.log("1 document inserted");
-            db.close;
+            //db.close;
+        });
+
+        var userQuery = {username: ownerId };
+        let postReplace = {$set: {posts: JSON.stringify(allUsers.get(ownerId).posts)}};
+
+
+        dbo.collection("users").updateOne(userQuery, postReplace, function(err, res) {
+            if (err) throw err;
+            console.log("1 document updated");
+            db.close();
         });
     });
 
@@ -842,10 +938,12 @@ function handleMultiPart(data, lines) {
         boundary = "--";
         boundary += typeInfo[1].substring(10, typeInfo[1].length);
         formAsList = parseFormBoundary(encodedBody, boundary);
-
     }
     return formAsList;
 }
+
+
+
 
 
 function postRequest(data, lines, requestPath, socket, port) {
@@ -919,7 +1017,20 @@ function postRequest(data, lines, requestPath, socket, port) {
             break;
         case '/conversation':
             console.log("SENDING CHAT RENDER");
-            response = buildHtmlResponse('./chatRender.html', []);
+            console.log(getHeaderInfo("Cookie:", lines))
+            let cookie = getValueFromHeader('sessionToken=', getHeaderInfo("Cookie:", lines));
+            console.log("COOKE");
+            console.log(cookie);
+            if (tokenUsers.has(cookie)) {
+                console.log(tokenUsers.get(cookie));
+                //TODO: NOT DONDE: check the value in header
+
+                   // response = buildRedirect('/', port);
+
+                    response = buildHtmlResponse('./chatRender.html', []);
+
+
+            }
 
     }
     if (response) {
@@ -935,6 +1046,10 @@ function paths(check, socket, port, lines) {
         expr = availPaths.get(check);
     } else if (check === '/') {
         expr = "default";
+
+    }else if(check.startsWith('/profile')) {
+        expr = '/profile';
+
 
     } else if (check.includes("images?")) {
         let images = check.split("images=")[1].split('+');
@@ -1003,9 +1118,15 @@ function paths(check, socket, port, lines) {
                 }
             }
 
+
             return;
 
+        case '/profile':
+            console.log("SENDING PROFILE");
 
+            response = sendProfile(check);
+
+            break;
         case "default":
 
             response = buildDefaultResponse();
@@ -1016,6 +1137,33 @@ function paths(check, socket, port, lines) {
     //sole.log(response.length);
     socket.write(response);
 }
+
+function sendProfile(path) {
+    let content = fs.readFileSync('./profile.html');
+    content = content.toString();
+    let tempName = path.substr(path.indexOf('/', 1)+ 1);
+    let user = allUsers.get(tempName);
+    console.log(user);
+    let usernameRender = "<p>" + user.username + "</p>";
+    let postIds;
+    user.posts.forEach(post => postIds += '<p>' + post + '</p> \r\n\r\n');
+
+    content = content.replace('{{username}}', usernameRender)
+        .replace('{{post}}', postIds);
+
+
+    return "HTTP/1.1 200 OK\r\n" +
+        "Content-Type: text/html\r\n" +
+        "Content-Length: " + content.length + "\r\n\r\n" +
+        content;
+
+
+
+}
+
+
+
+
 
 function createHandshake(socket, lines) {
     const sha1 = crypto.createHash('sha1')
@@ -1077,9 +1225,9 @@ function buildHtmlResponse(path, replace) {
 
     // html String 0 is the string to replace
     // htmlString 1 is the html to append
-    replace.forEach(htmlString => {
-        content.replace(htmlString[0], htmlString[1]);
-    });
+    replace.forEach(htmlString =>
+        content.replace(htmlString[0], htmlString[1])
+    );
 
 
     return "HTTP/1.1 200 OK\r\n" +

@@ -47,6 +47,14 @@ function addMessage(message) {
         likeCount.id = 'like' + chatMessage['id'].toString();
         likeCount.innerHTML = "LIKES: " + chatMessage['likeCount'];
         let startForm = document.createElement('form');
+        let postOwner = document.createElement('a');
+        postOwner.innerHTML = chatMessage['userID'];
+        postOwner.addEventListener('click', function () {
+            location.href = window.location.href + 'profile/' + chatMessage['userID'];
+
+
+
+        })
         startForm.action = "/conversation/" + chatMessage['userID'];
         startForm.method = 'post';
         startForm.enctype = "multipart/form-data";
@@ -61,9 +69,10 @@ function addMessage(message) {
         });
         //like.onclick = sendLike(chatMessage['id']);
         like.className = 'fas fa-cloud';
-        contentContainer.innerHTML += "<b>" + chatMessage['username'] + "</b>: " + chatMessage["comment"] + " \n POSTED BY: " + chatMessage['userID'] + "<br/>";
+        contentContainer.innerHTML += "<b>" + chatMessage['username'] + "</b>: " + chatMessage["comment"] +  "<br/>";
         contentContainer.appendChild(like);
         contentContainer.appendChild(likeCount);
+        contentContainer.appendChild(postOwner);
         contentContainer.appendChild(startForm);
         document.getElementById('chat').appendChild(contentContainer);
 

@@ -1,9 +1,11 @@
 class Message{
-    constructor(data, contentType, id,likeCount) {
+    constructor(data, contentType, id, likeCount, ownerId) {
+
         this.data = data;
         this.contentType = contentType;
         this.id = id;
         this.likeCount = likeCount;
+        this.ownerId = ownerId;
     }
 
     updateLike() {

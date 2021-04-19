@@ -11,7 +11,18 @@ class User{
 
     //add new person to who you chat with
     // Value of this usernameId is the array of messages to eachother
+
+    setChats(chats) {
+        this.chats = chats;
+}
+
+    addPosts(postId) {
+        this.posts.push(postId);
+    }
+
+
     addChat(username) {
+        console.log(username);
         this.chats.set(username, []);
     }
 
