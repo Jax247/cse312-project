@@ -14,9 +14,13 @@ const socket = new WebSocket("ws://" + window.location.host + "/websocket");
 
 // Allow users to send messages by pressing enter instead of clicking the Send button
 document.addEventListener("keypress", function (event) {
+  event.preventDefault();
+  console.log("KeyPress");
   if (event.code === "Enter" && signup) {
+    console.log("ATTEMPTING TO REGISTER:");
     send_register();
   } else if (event.code === "Enter" && !signup) {
+    console.log("ATTEMPTING TO LOGIN:");
     send_login();
   }
 });
@@ -29,7 +33,10 @@ function signup_switch() {
     form.innerHTML = signup_form.innerHTML;
     signup = true;
   }
+
+  console.log("Login: ", !signup);
 }
+
 function send_register() {
   const username = document.getElementById("register_username").value;
   const pw_field = document.getElementById("register_password");
@@ -61,7 +68,7 @@ function send_register() {
 }
 
 function send_login() {
-  const username = document.getElementById("username").value;
+  const username = document.getElementById("login").value;
   const pw_field = document.getElementById("password");
   const pw = pw_field.value;
   pw_field.value = "";
