@@ -10,6 +10,11 @@ const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
 
 
+let notLoggedInPaths = new Map();
+notLoggedInPaths.set("/Authentication/Auth/styles.css", 'content');
+notLoggedInPaths.set("/Authentication/Auth/auth.js", 'content');
+
+
 let availPaths = new Map();
 availPaths.set('/hello', "content");
 availPaths.set('/hi', "redirect");
@@ -28,6 +33,9 @@ availPaths.set('/register', 'redirect');
 availPaths.set('/registerNewAccount', 'redirect');
 availPaths.set('/chatScreen', 'content');
 availPaths.set('/profile', 'content');
+availPaths.set("/Authentication/Auth/styles.css", 'content');
+availPaths.set("/Authentication/Auth/auth.js", 'content');
+
 
 
 let content = new Map();
@@ -39,10 +47,16 @@ content.set('/image', ["./image", "image/jpeg \r\nX-Content-Type-Options: nosnif
     true, "utf8"])
 content.set("/style.css", ["./style.css", "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/function.js", ["./function.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
+content.set("/Authentication/Auth/auth.js", ["./Authentication/Auth/auth.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
+
+
 content.set("/conversation/dmFunctions.js", ["./dmFunctions.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/images", ["null", "text/html; \r\nX-Content-Type-Options: nosniff", false, "utf8"])
 content.set('/chatScreen', []);
 content.set('/profile', 'content');
+content.set("/Authentication/Auth/styles.css", ["./Authentication/Auth/styles.css",
+    "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
+
 
 let redirects = new Map();
 redirects.set('/hi', "/hello");
@@ -86,9 +100,9 @@ fs.readdirSync('./User_Uploads').forEach(upload => {
 net.createServer(function (socket) {
 
 
-    console.log("SERVER STARTED");
-    console.log(messageHistory);
-    console.log(allUsers);
+    //console.log("SERVER STARTED");
+    //console.log(messageHistory);
+    //console.log(allUsers);
 
     //if the client is logged in do the usual
 
@@ -101,43 +115,43 @@ net.createServer(function (socket) {
 
     socket.on('end', function (list) {
 
-        console.log("SOCKET end");
+        //console.log("SOCKET end");
     });
     socket.on("error", function (list) {
-        console.log("SOCKET ERROR");
+        //console.log("SOCKET ERROR");
     });
 
     socket.on('close', function (list) {
         //Go thru tokenList and delete pair with matching Socket
         if (socket.remoteAddress) {
-            console.log("USER LEFT:");
-            console.log(socket.remoteAddress);
-            console.log(socket.remotePort);
+            //console.log("USER LEFT:");
+            //console.log(socket.remoteAddress);
+            //console.log(socket.remotePort);
             upgradedUsers.delete(socket.remoteAddress + socket.remotePort.toString());
             sendActiveUsers();
         } else {
-            console.log("SOCKET UNDEFINED");
+            //console.log("SOCKET UNDEFINED");
         }
         //
         // for (let [key, value] of tokenUsers) {
         //     if (value.socket === socket) {
-        //         console.log("MATCHING SOCKET");
+        //         //console.log("MATCHING SOCKET");
         //         tokenUsers.delete(key);
         //     }
-        //     //console.log("WE ARE IN LOOP");
-        //     //console.log(value.socket.remoteAddress);
-        //     //console.log(value.socket.remotePort);
+        //     ////console.log("WE ARE IN LOOP");
+        //     ////console.log(value.socket.remoteAddress);
+        //     ////console.log(value.socket.remotePort);
         // }
-        console.log("SOECKT CLOSE");
+        //console.log("SOECKT CLOSE");
     });
 
 
     socket.on("data", function (data) {
-        console.log("ACTIVE USERS: " + upgradedUsers.size)
-        //console.log("CLIENT PORT: " + socket.remotePort);
-        //console.log("NEW STUFF");
-        //console.log(data.toString());
-        //console.log("WAITING FOR CONTENT: ", waitingForContent);
+        //console.log("ACTIVE USERS: " + upgradedUsers.size)
+        ////console.log("CLIENT PORT: " + socket.remotePort);
+        ////console.log("NEW STUFF");
+        ////console.log(data.toString());
+        ////console.log("WAITING FOR CONTENT: ", waitingForContent);
         if (!waitingForContent) {
             //lines = data.toString().split("\r\n");
             var indexOfContent = data.indexOf('\r\n\r\n');
@@ -157,8 +171,8 @@ net.createServer(function (socket) {
 
         if (!waitingForContent) {
             if (upgradedUsers.has(socket.remoteAddress + socket.remotePort.toString())) {
-                //console.log(data.toString());
-                //console.log("CONSOLE IS UPGRADED: " + data.length);
+                ////console.log(data.toString());
+                ////console.log("CONSOLE IS UPGRADED: " + data.length);
                 handleAsWebsocket(socket, data);
             } else {
                 const requestParts = lines[0].split(" ");
@@ -169,9 +183,9 @@ net.createServer(function (socket) {
                 const port = lines[1].split(':')[2];
 
                 if (checkForToken(lines)) {
-                    console.log("FOUND COOKIE");
-                    console.log(lines)
-                    //console.log("REGULAR CLIENT");
+                    ////console.log("FOUND COOKIE");
+                    ////console.log(lines)
+                    ////console.log("REGULAR CLIENT");
 
 
                     if (requestType === "GET") {
@@ -184,8 +198,8 @@ net.createServer(function (socket) {
                     extendedBuffer = [];
                     tempHeaders = [];
                 } else {
-                    //console.log(lines);
-                    //console.log("SHOULD BE HERE");
+                    ////console.log(lines);
+                    ////console.log("SHOULD BE HERE");
                     notLoggedInHandler(requestPath, socket, port, lines, extendedBuffer);
                     //socket.write(buildHtmlResponse('./login.html', []));
                 }
@@ -195,18 +209,31 @@ net.createServer(function (socket) {
 
 }).listen({host: "0.0.0.0", port: 8000});
 
+
+
+
+
+//function paths(check, socket, port, lines) {
 function notLoggedInHandler(path, socket, port, lines, data) {
-    //console.log(path);
+    //console.log("NOT LOGGED IN");
+    console.log(path);
+    let tempPath;
+    if (notLoggedInPaths.has(path) || path.startsWith('/image')) {
+
+        tempPath = path;
+        path = 'other';
+    }
+
     let response;
     switch (path) {
         case '/registerNewAccount':
             var formAsList = handleMultiPart(data, lines);
             var userFound = usernameExists(formAsList[0].content.toString());
-            console.log("USERFOUND: " + userFound);
+            ////console.log("USERFOUND: " + userFound);
             if (!userFound) {
-                console.log("CREATING ACCOUNT");
+                ////console.log("CREATING ACCOUNT");
                 //loggedInUsers.set(socket.remoteAddress.toString() + socket.remotePort.toString(), "GARBAGE");
-                console.log("USERNAME DOESNT EXIST");
+                ////console.log("USERNAME DOESNT EXIST");
                 //temporary
                 let userName = formAsList[0].content.toString();
                 let password = formAsList[1].content.toString();
@@ -224,9 +251,14 @@ function notLoggedInHandler(path, socket, port, lines, data) {
             }
             break
         case '/register?':
-            console.log("SENDING REGISTER");
-            response = buildHtmlResponse('./register.html', []);
+            ////console.log("SENDING REGISTER");
+            response = buildHtmlResponse('./Authentication/Auth/auth.html', []);
             break;
+
+        case 'other':
+            paths(tempPath, socket, port, lines);
+            console.log("IS OTHER");
+            return;
         default:
             response = buildHtmlResponse('./login.html', []);
     }
@@ -246,9 +278,9 @@ function sendCookie(username, socket) {
     //needs to be beefed up or could work?
     if (allUsers.has(username)) {
         tokenUsers.set(token, allUsers.get(username));
-        console.log("RETURNING USER");
+        //console.log("RETURNING USER");
     } else {
-        console.log("NEW USERS");
+        //console.log("NEW USERS");
         let newUser = new User(username, token, socket, []);
         allUsers.set(username, newUser)
         tokenUsers.set(token, newUser);
@@ -274,7 +306,7 @@ function sendActiveUsers() {
     let sendMsg = JSON.stringify({activeUsers: upgradedUsers.size, userId:users})
 
     for (let [ipPort, user] of upgradedUsers){
-        console.log("SENDING", sendMsg);
+        ////console.log("SENDING", sendMsg);
         user.socket.write(createWebsocketFrame(new Message(sendMsg, 'text')));
 
     }
@@ -282,9 +314,9 @@ function sendActiveUsers() {
 
 
 function checkForToken(lines) {
-    console.log("CHECKING FOR COOKEI");
+    //console.log("CHECKING FOR COOKEI");
     let cookies = getHeaderInfo('Cookie:', lines);
-    //console.log(getValueFromHeader('sessionToken=', cookies));
+    ////console.log(getValueFromHeader('sessionToken=', cookies));
     return tokenUsers.has(getValueFromHeader('sessionToken=', cookies));
 }
 
@@ -293,17 +325,17 @@ function usernameExists(username) {
     MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
-        console.log("CHECKING FOR USER");
+        //console.log("CHECKING FOR USER");
 
         var query = {username: username}
         dbo.collection('users').find(query).toArray(function (err, doc) //find if a value exists
         {
-            console.log(doc);
-            console.log(doc.length);
+            ////console.log(doc);
+            ////console.log(doc.length);
 
             if (doc.length > 0) {
 
-                console.log("DOES INCLUED : " + username);
+                //console.log("DOES INCLUED : " + username);
 
                 doesExist = true;
 
@@ -313,13 +345,13 @@ function usernameExists(username) {
 
         });
     });
-    console.log("RETVAL : " + doesExist);
+    ////console.log("RETVAL : " + doesExist);
     return doesExist;
 }
 
 //TODO: CREATE USER IN DB need to salt
 function createUserInDB(username, password, user) {
-    console.log("USER: " + user.chats);
+    ////console.log("USER: " + user.chats);
     MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
@@ -327,7 +359,7 @@ function createUserInDB(username, password, user) {
         var user = {username: username, password: password, chats : "", posts: ""};
         dbo.collection("users").insertOne(user, function (err, res) {
             if (err) throw err;
-            console.log("1 document inserted");
+            ////console.log("1 document inserted");
             db.close();
         });
     });
@@ -345,38 +377,38 @@ function createWebsocketFrame(message) {
         finOpp = 130;
     }
     let payloadLeng = messageData.length;
-    //console.log("DECODED LENG: " + messageData.length);
+    ////console.log("DECODED LENG: " + messageData.length);
 
     let send = new Buffer(Buffer.from([finOpp]));
     if (payloadLeng >= 126 && payloadLeng < 65536) {
-        //console.log("SHOULD CHANGE FRAME");
+        ////console.log("SHOULD CHANGE FRAME");
         send = new Buffer.concat([send, Buffer.from([126])]);
         let byte1 = 0xff & (payloadLeng >> 8);
         let byte2 = 0xff & payloadLeng;
-        //console.log("BUILD LENG: " + byte1.toString(2) + "_" + byte2.toString(2));
+        ////console.log("BUILD LENG: " + byte1.toString(2) + "_" + byte2.toString(2));
         send = new Buffer.concat([send, Buffer.from([byte1, byte2])]);
 
     } else {
-        //console.log("SMALL MESSAGE");
+        ////console.log("SMALL MESSAGE");
         send = new Buffer.concat([send, Buffer.from([payloadLeng])]);
     }
-    //console.log("OUT OF IF");
-    //console.log(Buffer.from(messageData, 'binary'));
+    ////console.log("OUT OF IF");
+    ////console.log(Buffer.from(messageData, 'binary'));
     send = Buffer.concat([send, Buffer.from(messageData, 'binary')]);
-    console.log("SEND: " + message.data.toString());
-    //console.log("SEND LENG: " + send.length);
+    //console.log("SEND: " + message.data.toString());
+    ////console.log("SEND LENG: " + send.length);
     return send;
 
 }
 
 function handleAsWebsocket(socket, data) {
-    console.log("HANDLING SOCKET");
+    //console.log("HANDLING SOCKET");
     var opp = (data[0]) & 15;
     var maskBit = (data[1] & 128);
     var maskIdx = 0;
     var senderSocket = socket;
-    //console.log("FINBIT: " + (data[0] & 256));
-    //console.log(data.length);
+    ////console.log("FINBIT: " + (data[0] & 256));
+    ////console.log(data.length);
 
     var leng = (data[1] & 127);
     let extendedLeng;
@@ -389,28 +421,28 @@ function handleAsWebsocket(socket, data) {
 
         if (leng === 126) {
             extendedLeng = ((data[2]) + (data[3])) & 0xffff;
-            //console.log("EXTEND: " + data[2].toString(2) + "_" + data[3].toString(2));
+            ////console.log("EXTEND: " + data[2].toString(2) + "_" + data[3].toString(2));
             let add1 = Buffer.from([data[2]]);
             let add2 = Buffer.from([data[3]]);
 
             var temp = Buffer.concat([add1, add2]);
-            //console.log("TEMP: : " + temp.readInt16LE(0).toString(16));
+            ////console.log("TEMP: : " + temp.readInt16LE(0).toString(16));
             //leng = parseInt(extendedLeng);
-            //console.log("LENG: " + leng);
-            //console.log("LENG: " + parseInt(extendedLeng));
+            ////console.log("LENG: " + leng);
+            ////console.log("LENG: " + parseInt(extendedLeng));
             maskIdx += 2;
         } else if (leng === 127) {
-            //console.log("WE GOETTEM ");
+            ////console.log("WE GOETTEM ");
         }
 
-        //console.log("MASK BIT: " + maskBit);
+        ////console.log("MASK BIT: " + maskBit);
         var MASK = [data[2 + maskIdx], data[maskIdx + 3], data[maskIdx + 4], data[maskIdx + 5]];
 
         var DECODED = "";
         for (let i = 6 + maskIdx; i < data.length; i++) {
             DECODED += String.fromCharCode(MASK[(i - 6 - maskIdx) % 4] ^ data[i]);
         }
-        //console.log(DECODED.length);
+        ////console.log(DECODED.length);
         let sendFrame;
         let frameType;
         let message;
@@ -427,7 +459,7 @@ function handleAsWebsocket(socket, data) {
 
                 frameType = 'like';
                 var pOut = handleLike(jTemp);
-                console.log(pOut);
+                //console.log(pOut);
                 DECODED = pOut
             } else if (tokenUsers.has(jTemp['sessionToken'])) {
                 frameType = 'post';
@@ -444,7 +476,7 @@ function handleAsWebsocket(socket, data) {
                 delete jTemp['sessionToken'];
 
                 DECODED = jTemp;
-                console.log(DECODED);
+                //console.log(DECODED);
                 //likeOrDisLike()
 
                 //handle Direct message seperate
@@ -469,9 +501,9 @@ function handleAsWebsocket(socket, data) {
                     allUsers.get(currUser).location = 'websocketDM/'+jTemp.userRecvid ;
                     allUsers.get(currUser).socket = socket;
 
-                    console.log("USER TO RECV: " + jTemp.userRecvid);
+                    //("USER TO RECV: " + jTemp.userRecvid);
                     if (allUsers.get(currUser).chats.has(jTemp.userRecvid)) {
-                        console.log("SHOULD SEND MESSAGE");
+                        ////console.log("SHOULD SEND MESSAGE");
                         let messages = allUsers.get(currUser).chats.get(jTemp.userRecvid);
                         messages.forEach(message =>
                             socket.write(createWebsocketFrame(new Message(message, frameType))));
@@ -481,7 +513,7 @@ function handleAsWebsocket(socket, data) {
 
                 } else {
                     handleDirectMessage(jTemp);
-                    console.log("HANDLING dms");
+                    //("HANDLING dms");
                     return;
                 }
 
@@ -489,7 +521,7 @@ function handleAsWebsocket(socket, data) {
 
 
             } else if (tokenUsers.has(jTemp.notify)) {
-                console.log("UPDATING USERS");
+                //console.log("UPDATING USERS");
 
                 currUserToken = jTemp['notify'];
 
@@ -502,18 +534,18 @@ function handleAsWebsocket(socket, data) {
 
                 sendActiveUsers();
 
-                console.log(upgradedUsers)
+                ////console.log(upgradedUsers)
 
 
                 allUsers.get(tokenUsers.get(currUserToken).username).location = 'index';
                 allUsers.get(tokenUsers.get(currUserToken).username).socket = socket;
 
                 let tempLikes = JSON.stringify(Array.from(tokenUsers.get(currUserToken).likes.keys()));
-                console.log(tempLikes)
+                ////console.log(tempLikes)
 
                 socket.write(createWebsocketFrame(new Message(tempLikes, frameType)));
 
-                console.log("UDATED");
+                //console.log("UDATED");
                 return;
 
             } else {
@@ -527,8 +559,8 @@ function handleAsWebsocket(socket, data) {
             //socket.write(createWebsocketFrame(DECODED, 'image'));
         }
 
-        console.log("DECODED");
-        console.log(DECODED);
+        //console.log("DECODED");
+        //////console.log(DECODED);
 
 
 
@@ -544,20 +576,20 @@ function handleAsWebsocket(socket, data) {
             allUsers.get(message.ownerId).addPosts(message.id);
             //TODO: WRITE POST TO DB USER
             messageHistory.push(message);
-            console.log("MESSAGE: " + message.data);
+            ////console.log("MESSAGE: " + message.data);
             storePost(message, message.ownerId);
 
 
 
         }
 
-        console.log("SENDING");
+        ////console.log("SENDING");
 
 
         for (let [key, value] of upgradedUsers) {
-            //console.log("WE ARE IN LOOP");
-            //console.log(value.socket.remoteAddress);
-            //console.log(value.socket.remotePort);
+            ////console.log("WE ARE IN LOOP");
+            ////console.log(value.socket.remoteAddress);
+            ////console.log(value.socket.remotePort);
             value.socket.write(sendFrame);
         }
 
@@ -572,8 +604,8 @@ function handleAsWebsocket(socket, data) {
 //TODO: CHECK IF THEY HAVE EXISTING CONVERSATION
 //TODO: SAVE MESSAGES TO THEIR CHAT
 function handleDirectMessage(jObject) {
-    console.log("HANDLING")
-    console.log(allUsers);
+    //console.log("HANDLING")
+    //console.log(allUsers);
 
     let tokenUser = tokenUsers.get(jObject.senderToken);
     if (tokenUsers.has(jObject.senderToken)) {
@@ -588,8 +620,8 @@ function handleDirectMessage(jObject) {
 
             //TODO: Uncomment recv Stuff
             sendUser.addChat(recvName);
-            console.log("RECV: " , recvUser)
-            console.log("SENDUSER: ", sendUser);
+            //console.log("RECV: " , recvUser)
+            //console.log("SENDUSER: ", sendUser);
             recvUser.addChat(senderName);
         }
 
@@ -614,27 +646,27 @@ function handleDirectMessage(jObject) {
         //user Is on
 
         if (tokenUsers.has(recvUser.sessionToken)) {
-            console.log("USER IS HERE");
+            //console.log("USER IS HERE");
             if (recvUser.location === 'websocketDM/' + senderName) {
-                console.log("USER AT DM");
+                //console.log("USER AT DM");
                 recvUser.socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
             //else if (recvUser.location === 'index')
             } else {
-                console.log("USER AT INDEX");
+                //console.log("USER AT INDEX");
                 recvUser.socket.write(createWebsocketFrame(new Message(JSON.stringify({hasMessage: senderName}), 'text')));
 
             }
         } else {
-            console.log("USER OFFLINE");
+            //console.log("USER OFFLINE");
         }
 
 
 
         tokenUsers.get(jObject.senderToken).socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
-        //console.log(sendUser);
-        console.log("USER:")
+        ////console.log(sendUser);
+        //console.log("USER:")
 
-        //console.log(allUsers.get(recvName).chats);
+        ////console.log(allUsers.get(recvName).chats);
 
     }
 
@@ -650,7 +682,7 @@ function addDirectMessageToMongo(sendUser, recvUser, message) {
 
 
         var sendUserQuery = {username: sendUser.username};
-        console.log("CHATS: " + JSON.stringify([...sendUser.chats]));
+        //console.log("CHATS: " + JSON.stringify([...sendUser.chats]));
 
         let postReplace = {$set: {chats :JSON.stringify([...sendUser.chats])}};
 
@@ -663,7 +695,7 @@ function addDirectMessageToMongo(sendUser, recvUser, message) {
 
         dbo.collection("users").updateOne(sendUserQuery, postReplace, function (err, res) {
             if (err) throw err;
-            console.log("1 document updated");
+            //console.log("1 document updated");
             //db.close();
         });
 
@@ -671,7 +703,7 @@ function addDirectMessageToMongo(sendUser, recvUser, message) {
 
         dbo.collection("users").updateOne(recvUserQuery, recvMessages, function (err, res) {
             if (err) throw err;
-            console.log("1 document updated");
+            //console.log("1 document updated");
             //db.close();
         });
     });
@@ -698,13 +730,13 @@ function addLikeToMongo(username, postId, doesLike) {
 
         dbo.collection("users").updateOne(userQuery, newValues, function(err, res) {
             if (err) throw err;
-            console.log("1 document updated");
+            //console.log("1 document updated");
             //db.close();
         });
 
         dbo.collection("message").updateOne(postQuery, postReplace, function(err, res) {
             if (err) throw err;
-            console.log("1 document updated");
+            //console.log("1 document updated");
             db.close();
         });
 
@@ -716,7 +748,7 @@ function addLikeToMongo(username, postId, doesLike) {
 }
 
 function handleLike(like) {
-    console.log(like);
+    //console.log(like);
     let totalLikes = 0;
     let doesLike = false;
     let user;
@@ -726,7 +758,7 @@ function handleLike(like) {
         user = tokenUsers.get(like.sessionToken);
         if (tokenUsers.get(like.sessionToken).likes.has(like.messageId)) {
             tokenUsers.get(like.sessionToken).likes.delete(like.messageId);
-            console.log(messageHistory[parseInt(like.messageId)])
+            //console.log(messageHistory[parseInt(like.messageId)])
             messageHistory[parseInt(like.messageId)].likeCount -= 1;
         } else {
             tokenUsers.get(like.sessionToken).likes.add(like.messageId);
@@ -744,23 +776,23 @@ function handleLike(like) {
         let tempToken = like['sessionToken'];
         delete like['sessionToken'];
 
-        console.log("GOING TO SEND: " + JSON.stringify(like));
+        //console.log("GOING TO SEND: " + JSON.stringify(like));
         tokenUsers.get(tempToken).socket.write(createWebsocketFrame(new Message(JSON.stringify(like))))
 
 
         delete like['doesLike'];
-        console.log(like);
-        console.log("GETTING LIKE");
-        console.log(messageHistory);
+        //console.log(like);
+        //console.log("GETTING LIKE");
+        //console.log(messageHistory);
     }
     return like;
 }
 
-  function importFromMongo() {
+function importFromMongo() {
      MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
-        console.log("GETTING COLLECTIOn");
+        //console.log("GETTING COLLECTIOn");
 
         var col = dbo.collection('message').find();
 
@@ -779,18 +811,18 @@ function handleLike(like) {
             }
         });
 
-        console.log("MESSAGES")
+        //console.log("MESSAGES")
 
 
-        console.log(messageHistory);
+        //console.log(messageHistory);
 
         var users = dbo.collection('users').find();
         users.each(function (err, document) {
             if (document) {
                 let newUser = new User(document.username, "", "", document.likes);
                 if (document.chats !== "") {
-                    console.log("SETTING");
-                    console.log((document.chats));
+                    //console.log("SETTING");
+                    //console.log((document.chats));
                     newUser.setChats(jsonToMap(JSON.parse(document.chats)));
                 }
                 if (document.posts !== "") {
@@ -800,8 +832,8 @@ function handleLike(like) {
                 allUsers.set(document.username, newUser);
             }
         });
-        console.log("ALL USERS");
-        console.log(allUsers);
+        //console.log("ALL USERS");
+        //console.log(allUsers);
         //TODO: IMPORT users into allUsers and populate each user field
 
         // var user = dbo.collection('users').find();
@@ -826,7 +858,6 @@ function jsonToMap(tooDarr)  {
     return resMap;
 }
 
-
 function storePost(message, ownerId) {
     MongoClient.connect(url, function (err, db) {
         if (err) throw err;
@@ -843,7 +874,7 @@ function storePost(message, ownerId) {
 
         dbo.collection("message").insertOne(myobj, function (err, res) {
             if (err) throw err;
-            console.log("1 document inserted");
+            //console.log("1 document inserted");
             //db.close;
         });
 
@@ -853,7 +884,7 @@ function storePost(message, ownerId) {
 
         dbo.collection("users").updateOne(userQuery, postReplace, function(err, res) {
             if (err) throw err;
-            console.log("1 document updated");
+            //console.log("1 document updated");
             db.close();
         });
     });
@@ -882,8 +913,8 @@ function getValueFromHeader(desired, line) {
     } else {
         end = line.length - 1;
     }
-    //console.log("START", indexOfDesired);
-    //console.log("END:", end);
+    ////console.log("START", indexOfDesired);
+    ////console.log("END:", end);
 
     return line.substr(indexOfDesired, end);
 }
@@ -931,7 +962,7 @@ function handleMultiPart(data, lines) {
     let typeInfo;
     let boundary;
     let formAsList = [];
-    //console.log("BEFORE CHECK: ", contentType);
+    ////console.log("BEFORE CHECK: ", contentType);
     if (contentType.includes('multipart/form-data')) {
         //("PARSING ");
         typeInfo = contentType.split(";");
@@ -942,14 +973,10 @@ function handleMultiPart(data, lines) {
     return formAsList;
 }
 
-
-
-
-
 function postRequest(data, lines, requestPath, socket, port) {
 
-    //console.log("LINES: ", lines);
-    //console.log("END OF LINES");
+    ////console.log("LINES: ", lines);
+    ////console.log("END OF LINES");
 
     let response;
     let userId;
@@ -969,14 +996,14 @@ function postRequest(data, lines, requestPath, socket, port) {
                 (formAsList[0].contentType.toString().includes('image/jpg') || formAsList[0].contentType.toString().includes('image/jpeg'))) {
 
 
-                //console.log("REACHED IMAGE UPLOAD:  ", formAsList[1].contentType);
+                ////console.log("REACHED IMAGE UPLOAD:  ", formAsList[1].contentType);
 
 
                 let nameOfImage = formAsList[0].contentDisposition.substr(formAsList[0].contentDisposition.indexOf("filename=") + fileName.length).replace(/"/g, "");
                 let contentType = formAsList[0].contentType;
-                //console.log("PRINTING CONTENT:  ", formAsList[0].contentType);
+                ////console.log("PRINTING CONTENT:  ", formAsList[0].contentType);
                 fs.writeFile('./User_Uploads/' + nameOfImage, formAsList[0].content, function (error) {
-                    if (error) return console.log(error);
+                    if (error) return //console.log(error);
                 });
 
                 let newUpload = new Upload('./User_Uploads/' + nameOfImage, formAsList[1].content.toString()
@@ -990,7 +1017,7 @@ function postRequest(data, lines, requestPath, socket, port) {
                 //if(userUploads.includes())
 
 
-                //console.log("ADDED ANOTHER IMAGE :  SIZE: ", userUploads.length);
+                ////console.log("ADDED ANOTHER IMAGE :  SIZE: ", userUploads.length);
             }
             response = buildRedirect(redirects.get('/image-upload'), port);
             break;
@@ -1016,13 +1043,13 @@ function postRequest(data, lines, requestPath, socket, port) {
             response = buildRedirect('/', port);
             break;
         case '/conversation':
-            console.log("SENDING CHAT RENDER");
-            console.log(getHeaderInfo("Cookie:", lines))
+            //console.log("SENDING CHAT RENDER");
+            //console.log(getHeaderInfo("Cookie:", lines))
             let cookie = getValueFromHeader('sessionToken=', getHeaderInfo("Cookie:", lines));
-            console.log("COOKE");
-            console.log(cookie);
+            //console.log("COOKE");
+            //console.log(cookie);
             if (tokenUsers.has(cookie)) {
-                console.log(tokenUsers.get(cookie));
+                //console.log(tokenUsers.get(cookie));
                 //TODO: NOT DONDE: check the value in header
 
                    // response = buildRedirect('/', port);
@@ -1039,6 +1066,7 @@ function postRequest(data, lines, requestPath, socket, port) {
 }
 
 function paths(check, socket, port, lines) {
+    console.log("CHECK: " + check);
     let builtContent;
     let expr = "false";
     let contentType;
@@ -1065,7 +1093,7 @@ function paths(check, socket, port, lines) {
         builtContent = buildImageResponse(name, images);
     } else if (check.includes("/image") || check.includes("/User_Uploads") && check !== "/image") {
         let fileName = "." + check;
-        //console.log(userUploads);
+        ////console.log(userUploads);
         if (check === "/User_Uploads") {
             contentType = userUploads.get(check).contentType;
         }
@@ -1078,7 +1106,7 @@ function paths(check, socket, port, lines) {
         }
     }
 
-    console.log(expr);
+    //console.log(expr);
     let response;
     switch (expr) {
         case "built":
@@ -1106,13 +1134,13 @@ function paths(check, socket, port, lines) {
         case '/websocketDM':
         case "/websocket":
             response = createHandshake(socket, lines);
-            console.log("INIT WEB SOCK");
+            //console.log("INIT WEB SOCK");
             upgradedUsers.set(socket.remoteAddress + socket.remotePort.toString(), new Client(socket.remoteAddress, socket.remotePort,expr, socket));
-            console.log(messageHistory);
-            //console.log(messageHistory.length);
+            //console.log(messageHistory);
+            ////console.log(messageHistory.length);
             if (expr !== '/websocketDM') {
                 for (let i = 0; i < messageHistory.length; i++) {
-                    console.log("SENDING: " + messageHistory[i]);
+                    //console.log("SENDING: " + messageHistory[i]);
                     //message history really post history
                     socket.write(createWebsocketFrame(messageHistory[i]));
                 }
@@ -1122,7 +1150,7 @@ function paths(check, socket, port, lines) {
             return;
 
         case '/profile':
-            console.log("SENDING PROFILE");
+            //console.log("SENDING PROFILE");
 
             response = sendProfile(check);
 
@@ -1132,8 +1160,8 @@ function paths(check, socket, port, lines) {
             response = buildDefaultResponse();
             break;
     }
-    //console.log(response);
-    console.log("SENDING RESPONSE");
+    ////console.log(response);
+    //console.log("SENDING RESPONSE");
     //sole.log(response.length);
     socket.write(response);
 }
@@ -1143,7 +1171,7 @@ function sendProfile(path) {
     content = content.toString();
     let tempName = path.substr(path.indexOf('/', 1)+ 1);
     let user = allUsers.get(tempName);
-    console.log(user);
+    //console.log(user);
     let usernameRender = "<p>" + user.username + "</p>";
     let postIds;
     user.posts.forEach(post => postIds += '<p>' + post + '</p> \r\n\r\n');
@@ -1167,7 +1195,7 @@ function sendProfile(path) {
 
 function createHandshake(socket, lines) {
     const sha1 = crypto.createHash('sha1')
-    console.log("HANDSHAKE");
+    //console.log("HANDSHAKE");
     let clientKey = getHeaderInfo('Sec-WebSocket-Key:', lines) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     sha1.update(clientKey);
     let response =
@@ -1268,7 +1296,7 @@ function buildResponseNotFound(content) {
         "Content-Type: text/plain\r\n" +
         "Content-Length: " + content.toString().length + "\r\n\r\n" +
         content;
-    //console.log("RESPONSE: " + response)
+    ////console.log("RESPONSE: " + response)
     return response;
 }
 
@@ -1281,7 +1309,7 @@ function buildImageResponse(name, imageList) {
         <img src="image/${image}.jpg" alt=""/> 
     `);
     }
-    //console.log("TEMP ::: " + temp)
+    ////console.log("TEMP ::: " + temp)
     return `
 <!DOCTYPE html>
 

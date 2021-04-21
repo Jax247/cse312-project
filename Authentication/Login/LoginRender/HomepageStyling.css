@@ -1,0 +1,81 @@
+
+
+.background {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-image:
+            linear-gradient(
+                    45deg,
+                    white,
+                    #4513b4 95%
+            );
+
+}
+
+
+
+
+.header{
+    height:8%;
+}
+
+.feed {
+    height: 92%;
+    display: flex;
+    width: 75%;
+    flex-direction: column;
+}
+
+.feedBlock {
+    background-color: white;
+    height: 20%;
+    border-style: solid;
+    border-color: black;
+    border-width: 2px;
+    border-radius: 15px;
+
+    justify-items: center;
+    margin-bottom: 10px;
+}
+
+.feedBlockTitle {
+    height: 10px;
+    padding-top: 3px;
+    display: flex;
+    flex-direction: row;
+}
+
+.feedBlockProfile{
+    width: 10%;
+}
+
+.feedBlockHeading{
+    width: 80%;
+
+}
+
+.dot {
+    height: 45px;
+    width: 45px;
+    background-color: #bbb;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+hr {
+    display: block;
+    width: 100%;
+
+    border-style: inset;
+    border-width: 1px;
+}
+
+.footer{
+}
