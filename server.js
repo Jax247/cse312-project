@@ -1,5 +1,8 @@
 const net = require('net');
 const fs = require('fs');
+const Paths = require('./Paths')
+const Content = require('./Content')
+const Http = require('./Http')
 const FormSection = require('./FormSection');
 const Upload = require('./Upload');
 const crypto = require('crypto')
@@ -7,64 +10,18 @@ const Client = require('./Client');
 const Message = require('./Message');
 const User = require('./User');
 const MongoClient = require('mongodb').MongoClient;
+const Database = require('./Database');
 const assert = require('assert');
 
+// Pathing data is stored in Paths.js
+let patharchive = new Paths();
+let notLoggedInPaths = patharchive.notLoggedInPaths;
+let availPaths = patharchive.availPaths;
+let redirects = patharchive.redirects;
 
-let notLoggedInPaths = new Map();
-notLoggedInPaths.set("/Authentication/Auth/styles.css", 'content');
-notLoggedInPaths.set("/Authentication/Auth/auth.js", 'content');
-
-
-let availPaths = new Map();
-availPaths.set('/hello', "content");
-availPaths.set('/hi', "redirect");
-availPaths.set('/comment', 'redirect');
-availPaths.set('/image-upload', 'redirect');
-availPaths.set('/utf.txt', 'content')
-availPaths.set('/style.css', 'content');
-availPaths.set('/function.js', 'content');
-availPaths.set('/conversation/dmFunctions.js', 'content');
-availPaths.set('/images', 'content');
-availPaths.set('/image', 'content');
-availPaths.set('/User_Uploads', 'content');
-availPaths.set('/websocket', '/websocket');
-availPaths.set('/websocketDM', '/websocketDM');
-availPaths.set('/register', 'redirect');
-availPaths.set('/registerNewAccount', 'redirect');
-availPaths.set('/chatScreen', 'content');
-availPaths.set('/profile', 'content');
-availPaths.set("/Authentication/Auth/styles.css", 'content');
-availPaths.set("/Authentication/Auth/auth.js", 'content');
-
-
-
-let content = new Map();
-content.set('/hello', ["Hello World!", "text/plain", false, "ascii"]);
-//File destination, content type, boolean of file or not, file type
-content.set('/utf.txt', ["./utf.txt", "text/plain; charset=UTF-8; " +
-"\r\nX-Content-Type-Options: nosniff", true, "utf8"])
-content.set('/image', ["./image", "image/jpeg \r\nX-Content-Type-Options: nosniff",
-    true, "utf8"])
-content.set("/style.css", ["./style.css", "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
-content.set("/function.js", ["./function.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
-content.set("/Authentication/Auth/auth.js", ["./Authentication/Auth/auth.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
-
-
-content.set("/conversation/dmFunctions.js", ["./dmFunctions.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
-content.set("/images", ["null", "text/html; \r\nX-Content-Type-Options: nosniff", false, "utf8"])
-content.set('/chatScreen', []);
-content.set('/profile', 'content');
-content.set("/Authentication/Auth/styles.css", ["./Authentication/Auth/styles.css",
-    "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
-
-
-let redirects = new Map();
-redirects.set('/hi', "/hello");
-redirects.set('/comment', '/');
-redirects.set('/image-upload', '/');
-redirects.set('/register', '/');
-redirects.set('/registerNewAccount', '/');
-
+// Content is stored in Content.js
+let contentArchive = new Content();
+let content = contentArchive.content;
 
 let namesAndComments = [];
 let userUploads = [];
@@ -76,21 +33,18 @@ let allUsers = new Map();
 //All active users
 let tokenUsers = new Map();
 
-
+// Basic HTTP responses
+let HTTP = new Http();
+// Database function wrapper
+let mongoDatabase = new Database();
 
 var url = "mongodb://localhost:27017/";
 //var url = 'mongodb://mongo:27017';
-
-MongoClient.connect(url, function (err, db) {
-    if (err) throw err;
-    var dbo = db.db("mydb");
-
-    db.close();
-});
+mongoDatabase.setURL(url);
+mongoDatabase.connect(MongoClient);
 //TODO: CHANGE HOW WE IMPORT A MESSAGE BY GETTING LIKES
-importFromMongo()
-
-
+messageHistory = mongoDatabase.importMessages(MongoClient);
+allUsers = mongoDatabase.importAllUsers(MongoClient, messageHistory);
 
 
 fs.readdirSync('./User_Uploads').forEach(upload => {
@@ -99,13 +53,11 @@ fs.readdirSync('./User_Uploads').forEach(upload => {
 
 net.createServer(function (socket) {
 
-
     //console.log("SERVER STARTED");
     //console.log(messageHistory);
     //console.log(allUsers);
 
     //if the client is logged in do the usual
-
 
     let waitingForContent = false;
     let extendedBuffer;
@@ -201,16 +153,13 @@ net.createServer(function (socket) {
                     ////console.log(lines);
                     ////console.log("SHOULD BE HERE");
                     notLoggedInHandler(requestPath, socket, port, lines, extendedBuffer);
-                    //socket.write(buildHtmlResponse('./login.html', []));
+                    //socket.write(HTTP.buildHtmlResponse('./login.html', []));
                 }
             }
         }
     });
 
 }).listen({host: "0.0.0.0", port: 8000});
-
-
-
 
 
 //function paths(check, socket, port, lines) {
@@ -228,7 +177,7 @@ function notLoggedInHandler(path, socket, port, lines, data) {
     switch (path) {
         case '/registerNewAccount':
             var formAsList = handleMultiPart(data, lines);
-            var userFound = usernameExists(formAsList[0].content.toString());
+            var userFound = mongoDatabase.usernameExists(MongoClient, formAsList[0].content.toString());
             ////console.log("USERFOUND: " + userFound);
             if (!userFound) {
                 ////console.log("CREATING ACCOUNT");
@@ -241,18 +190,16 @@ function notLoggedInHandler(path, socket, port, lines, data) {
                 //TODO:
                 let currUser = sendCookie(userName, socket);
 
-                createUserInDB(formAsList[0].content.toString(), formAsList[1].content.toString(), currUser);
-
+                mongoDatabase.createUserInDB(MongoClient, formAsList[0].content.toString(), formAsList[1].content.toString(), currUser);
 
 
                 //Send cookie which adds their session token
-
 
             }
             break
         case '/register?':
             ////console.log("SENDING REGISTER");
-            response = buildHtmlResponse('./Authentication/Auth/auth.html', []);
+            response = HTTP.buildHtmlResponse('./Authentication/Auth/auth.html', []);
             break;
 
         case 'other':
@@ -260,11 +207,10 @@ function notLoggedInHandler(path, socket, port, lines, data) {
             console.log("IS OTHER");
             return;
         default:
-            response = buildHtmlResponse('./login.html', []);
+            response = HTTP.buildHtmlResponse('./login.html', []);
     }
     if (response) {
         socket.write(response);
-
     }
 }
 
@@ -284,7 +230,6 @@ function sendCookie(username, socket) {
         let newUser = new User(username, token, socket, []);
         allUsers.set(username, newUser)
         tokenUsers.set(token, newUser);
-
     }
 
     let content = fs.readFileSync('./index.html');
@@ -308,7 +253,6 @@ function sendActiveUsers() {
     for (let [ipPort, user] of upgradedUsers){
         ////console.log("SENDING", sendMsg);
         user.socket.write(createWebsocketFrame(new Message(sendMsg, 'text')));
-
     }
 }
 
@@ -319,53 +263,6 @@ function checkForToken(lines) {
     ////console.log(getValueFromHeader('sessionToken=', cookies));
     return tokenUsers.has(getValueFromHeader('sessionToken=', cookies));
 }
-
-function usernameExists(username) {
-    let doesExist = false;
-    MongoClient.connect(url, function (err, db) {
-        if (err) throw err;
-        var dbo = db.db("mydb");
-        //console.log("CHECKING FOR USER");
-
-        var query = {username: username}
-        dbo.collection('users').find(query).toArray(function (err, doc) //find if a value exists
-        {
-            ////console.log(doc);
-            ////console.log(doc.length);
-
-            if (doc.length > 0) {
-
-                //console.log("DOES INCLUED : " + username);
-
-                doesExist = true;
-
-
-            }
-            db.close();
-
-        });
-    });
-    ////console.log("RETVAL : " + doesExist);
-    return doesExist;
-}
-
-//TODO: CREATE USER IN DB need to salt
-function createUserInDB(username, password, user) {
-    ////console.log("USER: " + user.chats);
-    MongoClient.connect(url, function (err, db) {
-        if (err) throw err;
-        var dbo = db.db("mydb");
-
-        var user = {username: username, password: password, chats : "", posts: ""};
-        dbo.collection("users").insertOne(user, function (err, res) {
-            if (err) throw err;
-            ////console.log("1 document inserted");
-            db.close();
-        });
-    });
-
-}
-
 
 function createWebsocketFrame(message) {
     let type = message.contentType
@@ -466,7 +363,6 @@ function handleAsWebsocket(socket, data) {
 
                 currUserToken = jTemp['sessionToken'];
 
-
                 //DECODED = DECODED.substr(0, DECODED.length - 1);
                 var idNum = messageHistory.length;
 
@@ -482,7 +378,6 @@ function handleAsWebsocket(socket, data) {
                 //handle Direct message seperate
             }else if (jTemp.dm === true) {
                 frameType = 'dm';
-
 
                 //TODO:
                 if (tokenUsers.has(jTemp.dmnotify)) {
@@ -518,8 +413,6 @@ function handleAsWebsocket(socket, data) {
                 }
 
 
-
-
             } else if (tokenUsers.has(jTemp.notify)) {
                 //console.log("UPDATING USERS");
 
@@ -531,11 +424,9 @@ function handleAsWebsocket(socket, data) {
                 upgradedUsers.get(socket.remoteAddress + socket.remotePort.toString())
                     .setUserId(tokenUsers.get(jTemp.notify).username.toString());
 
-
                 sendActiveUsers();
 
                 ////console.log(upgradedUsers)
-
 
                 allUsers.get(tokenUsers.get(currUserToken).username).location = 'index';
                 allUsers.get(tokenUsers.get(currUserToken).username).socket = socket;
@@ -562,11 +453,8 @@ function handleAsWebsocket(socket, data) {
         //console.log("DECODED");
         //////console.log(DECODED);
 
-
-
         message = new Message(JSON.stringify(DECODED), frameType, messageHistory.length, 0);
         sendFrame = createWebsocketFrame(message);
-
 
         if (frameType === 'like') {
 
@@ -577,14 +465,10 @@ function handleAsWebsocket(socket, data) {
             //TODO: WRITE POST TO DB USER
             messageHistory.push(message);
             ////console.log("MESSAGE: " + message.data);
-            storePost(message, message.ownerId);
-
-
-
+            mongoDatabase.storePost(MongoClient, message, message.ownerId);
         }
 
         ////console.log("SENDING");
-
 
         for (let [key, value] of upgradedUsers) {
             ////console.log("WE ARE IN LOOP");
@@ -592,7 +476,6 @@ function handleAsWebsocket(socket, data) {
             ////console.log(value.socket.remotePort);
             value.socket.write(sendFrame);
         }
-
 
         //Image incoming
 
@@ -634,14 +517,12 @@ function handleDirectMessage(jObject) {
         //
         // }
 
-
         recvUser.addMessageToChat(senderName, messageToSave);
-
 
         allUsers.set(recvName, recvUser);
         allUsers.set(senderName, sendUser);
 
-        addDirectMessageToMongo(sendUser, recvUser, messageToSave);
+        mongoDatabase.addDirectMessageToMongo(MongoClient, sendUser, recvUser, messageToSave);
 
         //user Is on
 
@@ -660,90 +541,12 @@ function handleDirectMessage(jObject) {
             //console.log("USER OFFLINE");
         }
 
-
-
         tokenUsers.get(jObject.senderToken).socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
         ////console.log(sendUser);
         //console.log("USER:")
 
         ////console.log(allUsers.get(recvName).chats);
-
     }
-
-}
-
-
-function addDirectMessageToMongo(sendUser, recvUser, message) {
-
-
-    MongoClient.connect(url, function(err, db) {
-        if (err) throw err;
-        var dbo = db.db("mydb");
-
-
-        var sendUserQuery = {username: sendUser.username};
-        //console.log("CHATS: " + JSON.stringify([...sendUser.chats]));
-
-        let postReplace = {$set: {chats :JSON.stringify([...sendUser.chats])}};
-
-
-        var recvUserQuery = {username: recvUser.username};
-        var recvMessages = {$set: {chats :JSON.stringify([...recvUser.chats])}};
-        // let tempSet = allUsers.get(username).likes;
-        // let newValues = {$set: {likes: JSON.stringify([...tempSet.keys()])}};
-
-
-        dbo.collection("users").updateOne(sendUserQuery, postReplace, function (err, res) {
-            if (err) throw err;
-            //console.log("1 document updated");
-            //db.close();
-        });
-
-
-
-        dbo.collection("users").updateOne(recvUserQuery, recvMessages, function (err, res) {
-            if (err) throw err;
-            //console.log("1 document updated");
-            //db.close();
-        });
-    });
-}
-
-
-//TODO: go to user collection get user with username update their list of likes
-//TODO: ALSO UPDATE LIKE COUNT OF POST USING POST ID:
-function addLikeToMongo(username, postId, doesLike) {
-    MongoClient.connect(url, function(err, db) {
-        if (err) throw err;
-        var dbo = db.db("mydb");
-        var userQuery = {username: username };
-        let postQuery = {id: postId}
-
-
-        let postReplace = {$set: {likeCount: messageHistory[parseInt(postId)].likeCount}};
-
-
-        let tempSet = allUsers.get(username).likes;
-        let newValues = { $set: {likes: JSON.stringify([...tempSet.keys()]) } };
-
-
-
-        dbo.collection("users").updateOne(userQuery, newValues, function(err, res) {
-            if (err) throw err;
-            //console.log("1 document updated");
-            //db.close();
-        });
-
-        dbo.collection("message").updateOne(postQuery, postReplace, function(err, res) {
-            if (err) throw err;
-            //console.log("1 document updated");
-            db.close();
-        });
-
-
-
-
-    });
 
 }
 
@@ -752,7 +555,6 @@ function handleLike(like) {
     let totalLikes = 0;
     let doesLike = false;
     let user;
-
 
     if (tokenUsers.has(like.sessionToken)) {
         user = tokenUsers.get(like.sessionToken);
@@ -767,7 +569,7 @@ function handleLike(like) {
         }
 
         //TODO: check if works
-        addLikeToMongo(tokenUsers.get(like.sessionToken).username, like.messageId, doesLike);
+        mongoDatabase.addLikeToMongo(MongoClient, tokenUsers.get(like.sessionToken).username, like.messageId, doesLike);
 
         messageHistory[parseInt(like.messageId)].updateLike();
         totalLikes = messageHistory[parseInt(like.messageId)].likeCount;
@@ -779,72 +581,12 @@ function handleLike(like) {
         //console.log("GOING TO SEND: " + JSON.stringify(like));
         tokenUsers.get(tempToken).socket.write(createWebsocketFrame(new Message(JSON.stringify(like))))
 
-
         delete like['doesLike'];
         //console.log(like);
         //console.log("GETTING LIKE");
         //console.log(messageHistory);
     }
     return like;
-}
-
-function importFromMongo() {
-     MongoClient.connect(url, function (err, db) {
-        if (err) throw err;
-        var dbo = db.db("mydb");
-        //console.log("GETTING COLLECTIOn");
-
-        var col = dbo.collection('message').find();
-
-        //Import Messages
-         col.each( function (err, document) {
-            if (document) {
-                let jsonMessage = JSON.stringify(
-                    {
-                        username: document.username,
-                        comment: document.comment,
-                        id: document.id,
-                        likeCount: document.likeCount,
-                        userID: document.userID
-                    });
-                messageHistory.push(new Message(jsonMessage, document.contentType, messageHistory.length, document.likeCount));
-            }
-        });
-
-        //console.log("MESSAGES")
-
-
-        //console.log(messageHistory);
-
-        var users = dbo.collection('users').find();
-        users.each(function (err, document) {
-            if (document) {
-                let newUser = new User(document.username, "", "", document.likes);
-                if (document.chats !== "") {
-                    //console.log("SETTING");
-                    //console.log((document.chats));
-                    newUser.setChats(jsonToMap(JSON.parse(document.chats)));
-                }
-                if (document.posts !== "") {
-                    newUser.posts = JSON.parse(document.posts);
-                }
-
-                allUsers.set(document.username, newUser);
-            }
-        });
-        //console.log("ALL USERS");
-        //console.log(allUsers);
-        //TODO: IMPORT users into allUsers and populate each user field
-
-        // var user = dbo.collection('users').find();
-        // user.each(function (err, document) {
-        //     if (document) {
-        //         allUsers.push(new User(document.username, document.contentType, messageHistory.length, 0));
-        //     }
-        // });
-        dbo.close
-    });
-
 }
 
 function jsonToMap(tooDarr)  {
@@ -856,39 +598,6 @@ function jsonToMap(tooDarr)  {
     }
 
     return resMap;
-}
-
-function storePost(message, ownerId) {
-    MongoClient.connect(url, function (err, db) {
-        if (err) throw err;
-        var dbo = db.db("mydb");
-        let tempJson = JSON.parse(message.data);
-        var myobj =
-            {   username: tempJson.username,
-                comment: tempJson.comment,
-                contentType: message.contentType,
-                id:tempJson.id,
-                likeCount: tempJson.likeCount,
-                userID: tempJson.userID
-            };
-
-        dbo.collection("message").insertOne(myobj, function (err, res) {
-            if (err) throw err;
-            //console.log("1 document inserted");
-            //db.close;
-        });
-
-        var userQuery = {username: ownerId };
-        let postReplace = {$set: {posts: JSON.stringify(allUsers.get(ownerId).posts)}};
-
-
-        dbo.collection("users").updateOne(userQuery, postReplace, function(err, res) {
-            if (err) throw err;
-            //console.log("1 document updated");
-            db.close();
-        });
-    });
-
 }
 
 function getHeaderInfo(desiredLine, lines) {
@@ -985,7 +694,6 @@ function postRequest(data, lines, requestPath, socket, port) {
         userId = requestPath.substr(requestPath.length);
     }
 
-
     let formAsList = handleMultiPart(data, lines);
     switch (requestPath) {
         case "/image-upload":
@@ -1019,7 +727,7 @@ function postRequest(data, lines, requestPath, socket, port) {
 
                 ////console.log("ADDED ANOTHER IMAGE :  SIZE: ", userUploads.length);
             }
-            response = buildRedirect(redirects.get('/image-upload'), port);
+            response = HTTP.buildRedirect(redirects.get('/image-upload'), port);
             break;
         case "/comment":
             //10 = length of boundary=
@@ -1035,12 +743,12 @@ function postRequest(data, lines, requestPath, socket, port) {
                 namesAndComments.push(nameComment.trim());
             }
 
-            response = buildRedirect(redirects.get('/comment'), port);
+            response = HTTP.buildRedirect(redirects.get('/comment'), port);
 
             break;
         case '/registerNewAccount':
 
-            response = buildRedirect('/', port);
+            response = HTTP.buildRedirect('/', port);
             break;
         case '/conversation':
             //console.log("SENDING CHAT RENDER");
@@ -1052,11 +760,9 @@ function postRequest(data, lines, requestPath, socket, port) {
                 //console.log(tokenUsers.get(cookie));
                 //TODO: NOT DONDE: check the value in header
 
-                   // response = buildRedirect('/', port);
+                   // response = HTTP.buildRedirect('/', port);
 
-                    response = buildHtmlResponse('./chatRender.html', []);
-
-
+                    response = HTTP.buildHtmlResponse('./chatRender.html', []);
             }
 
     }
@@ -1090,7 +796,7 @@ function paths(check, socket, port, lines) {
         }
         expr = "built";
         check = '/images'
-        builtContent = buildImageResponse(name, images);
+        builtContent = HTTP.buildImageResponse(name, images);
     } else if (check.includes("/image") || check.includes("/User_Uploads") && check !== "/image") {
         let fileName = "." + check;
         ////console.log(userUploads);
@@ -1110,26 +816,26 @@ function paths(check, socket, port, lines) {
     let response;
     switch (expr) {
         case "built":
-            response = buildResponseOK(builtContent, content.get(check)[1],
+            response = HTTP.buildResponseOK(builtContent, content.get(check)[1],
                 content.get(check)[2], content.get(check)[3]);
             break;
         case "/image":
-            response = buildBinaryResponse('.' + check, content.get(expr)[1],
+            response = HTTP.buildBinaryResponse('.' + check, content.get(expr)[1],
                 content.get(expr)[2], content.get(expr)[3]);
             break;
 
         case "content":
             // 0 File destination,1 content type,2 boolean of file or not,3 file type
-            response = buildResponseOK(content.get(check)[0], content.get(check)[1],
+            response = HTTP.buildResponseOK(content.get(check)[0], content.get(check)[1],
                 content.get(check)[2], content.get(check)[3]);
             break;
 
         case "redirect":
-            response = buildRedirect(redirects.get(check), port)
+            response = HTTP.buildRedirect(redirects.get(check), port)
             break;
 
         case "false":
-            response = buildResponseNotFound("Not Found")
+            response = HTTP.buildResponseNotFound("Not Found")
             break;
         case '/websocketDM':
         case "/websocket":
@@ -1145,7 +851,6 @@ function paths(check, socket, port, lines) {
                     socket.write(createWebsocketFrame(messageHistory[i]));
                 }
             }
-
 
             return;
 
@@ -1184,14 +889,7 @@ function sendProfile(path) {
         "Content-Type: text/html\r\n" +
         "Content-Length: " + content.length + "\r\n\r\n" +
         content;
-
-
-
 }
-
-
-
-
 
 function createHandshake(socket, lines) {
     const sha1 = crypto.createHash('sha1')
@@ -1207,63 +905,6 @@ function createHandshake(socket, lines) {
 
     return response;
 }
-
-function buildRedirect(redirect, port) {
-    let response = "HTTP/1.1 301 Moved Permanently\r\n"
-    //response += "Content-Length: 0\r\n\r\n";
-    response += "Location: http://localhost:" + port + redirect + "\r\n\r\n";
-
-    return response
-}
-
-function buildBinaryResponse(content, mimeType, isFile, decode) {
-    let display = fs.readFileSync(content);
-    let response =
-        "HTTP/1.1 200 OK\r\n" +
-        "Content-Type: " + mimeType + "\r\n" +
-        "Content-Length: " + display.length + "\r\n\r\n";
-
-    const responseBuffer = Buffer.from(response, 'utf8')
-    return Buffer.concat([responseBuffer, display]);
-
-}
-
-function buildResponseOK(content, mimeType, isFile, decode) {
-    let length = content.length;
-    let display = content;
-    if (isFile) {
-        display = fs.readFileSync(content);
-        length = Buffer.byteLength(display)
-    }
-    let response =
-        "HTTP/1.1 200 OK\r\n" +
-        "Content-Type: " + mimeType + "\r\n" +
-        "Content-Length: " + length + "\r\n\r\n" +
-        display;
-    return response;
-}
-
-
-//Pass in a 2d array each inner array should be the string
-//to replace in the html file the other and array of the
-// content you want to append in html form already
-function buildHtmlResponse(path, replace) {
-    let content = fs.readFileSync(path);
-    content = content.toString();
-
-    // html String 0 is the string to replace
-    // htmlString 1 is the html to append
-    replace.forEach(htmlString =>
-        content.replace(htmlString[0], htmlString[1])
-    );
-
-
-    return "HTTP/1.1 200 OK\r\n" +
-        "Content-Type: text/html\r\n" +
-        "Content-Length: " + content.length + "\r\n\r\n" +
-        content;
-}
-
 
 function buildDefaultResponse() {
     let content = fs.readFileSync('./index.html');
@@ -1288,38 +929,3 @@ function buildDefaultResponse() {
         "Content-Length: " + content.length + "\r\n\r\n" +
         content;
 }
-
-
-function buildResponseNotFound(content) {
-    let response =
-        "HTTP/1.1 404 Not Found\r\n" +
-        "Content-Type: text/plain\r\n" +
-        "Content-Length: " + content.toString().length + "\r\n\r\n" +
-        content;
-    ////console.log("RESPONSE: " + response)
-    return response;
-}
-
-
-function buildImageResponse(name, imageList) {
-    var temp = "";
-    if (imageList !== undefined || imageList.length !== 0) {
-        imageList.map(image =>
-            temp += `
-        <img src="image/${image}.jpg" alt=""/> 
-    `);
-    }
-    ////console.log("TEMP ::: " + temp)
-    return `
-<!DOCTYPE html>
-
-    <body>
-    <p>${name}</p>
-    ${temp}
-    </body>
-    </html>
-    `;
-}
-
-
-
