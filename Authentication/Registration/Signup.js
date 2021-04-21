@@ -1,6 +1,5 @@
 let signup = false;
 
-let login_form = document.getElementById("loginForm");
 let signup_form = document.getElementById("registerForm");
 let form = document.getElementById("form");
 form.innerHTML = login_form.innerHTML;
@@ -13,32 +12,33 @@ const socket = new WebSocket("ws://" + window.location.host + "/websocket");
 // socket.onmessage = addMessage;
 
 login_form.addEventListener('submit', function(e) {
-  send_login();
-  e.preventDefault();
+  console.log("IM HERE BOSS");
 })
 
 
 // Allow users to send messages by pressing enter instead of clicking the Send button
 document.addEventListener("keypress", function (event) {
   console.log("keypress: " + event.code)
-  // if (event.code === "Enter" && signup) {
-  //   send_register();
-  // } else if (event.code === "Enter" && !signup) {
-  //   send_login();
-  // }
-  // event.preventDefault();
+  
 });
 
-function signup_switch() {
-  if (signup) {
-    form.innerHTML = login_form.innerHTML;
-    signup = false;
+socket.addEventListener("message", function (event) {
+  console.log("EVENT:");
+  console.log(typeof event.data)
+  if (typeof event.data === 'string') {
+
+      console.log("IS TEXT");
+      // text frame
+      console.log(event.data.toString());
+      // addMessage(event);
+
   } else {
-    form.innerHTML = signup_form.innerHTML;
-    signup = true;
+      console.log("IS BINARY");
   }
-}
+});
+
 function send_register() {
+
   const username = document.getElementById("register_username").value;
   const pw_field = document.getElementById("register_password");
   const confirm_field = document.getElementById("confirm_password").value;
@@ -46,7 +46,7 @@ function send_register() {
   const confirm = confirm_field.value;
   confirm_field = "";
   pw_field.value = "";
-  // pw_field.focus();
+  pw_field.focus();
 
 
   // Password Validation
@@ -65,23 +65,6 @@ function send_register() {
     return;
   }
   
+  console.log("Validated");
 
-}
-
-function send_login() {
-  console.log("Attempting to login");
-  const username = document.getElementById("username").value;
-  const pw_field = document.getElementById("password");
-  const pw = pw_field.value;
-  pw_field.value = "";
-  pw_field.focus();
-
-  // Send information to server
-  let json = JSON.stringify({
-    username: username,
-    password: pw,
-  });
-  console.log(json);
-  // socket.send(json);
-  // socket.send(JSON.stringify({'username': username, 'password': pw}));
 }

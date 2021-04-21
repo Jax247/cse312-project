@@ -34,6 +34,7 @@ availPaths.set('/registerNewAccount', 'redirect');
 availPaths.set('/chatScreen', 'content');
 availPaths.set('/profile', 'content');
 availPaths.set("/Authentication/Auth/styles.css", 'content');
+availPaths.set("/Authentication/Registration/styles.css", 'content');
 availPaths.set("/Authentication/Auth/auth.js", 'content');
 
 
@@ -56,6 +57,7 @@ content.set('/chatScreen', []);
 content.set('/profile', 'content');
 content.set("/Authentication/Auth/styles.css", ["./Authentication/Auth/styles.css",
     "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
+
 
 
 let redirects = new Map();
@@ -246,13 +248,13 @@ function notLoggedInHandler(path, socket, port, lines, data) {
 
 
                 //Send cookie which adds their session token
-
+                response = buildHtmlResponse('./Authentication/Registration/Register.html', []);
 
             }
             break
         case '/register?':
             ////console.log("SENDING REGISTER");
-            response = buildHtmlResponse('./Authentication/Auth/auth.html', []);
+            response = buildHtmlResponse('./Authentication/Registration/Register.html', []);
             break;
 
         case 'other':
