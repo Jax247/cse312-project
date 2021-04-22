@@ -80,8 +80,8 @@ let tokenUsers = new Map();
 
 
 
-var url = "mongodb://localhost:27017/";
-//var url = 'mongodb://mongo:27017';
+//var url = "mongodb://localhost:27017/";
+var url = 'mongodb://mongo:27017';
 
 MongoClient.connect(url, function (err, db) {
     if (err) throw err;
@@ -822,12 +822,12 @@ function importFromMongo() {
         users.each(function (err, document) {
             if (document) {
                 let newUser = new User(document.username, "", "", document.likes);
-                if (document.chats !== "") {
+                if (document.chats !== "" && document.chats) {
                     //console.log("SETTING");
-                    //console.log((document.chats));
+                    console.log((document.chats));
                     newUser.setChats(jsonToMap(JSON.parse(document.chats)));
                 }
-                if (document.posts !== "") {
+                if (document.posts !== "" && document.posts) {
                     newUser.posts = JSON.parse(document.posts);
                 }
 
