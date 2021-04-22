@@ -42,7 +42,15 @@ function addMessage(message) {
     } else {
         let contentContainer = document.createElement('div');
         console.log("ID: " + chatMessage['id']);
+        contentContainer.className = "card bg-light mb-3";
         contentContainer.id = "messsage" + chatMessage['id'];
+        let cardHead = document.createElement('div');
+        cardHead.className = "card-header";
+        cardHead.innerHTML = chatMessage['username'] + " Posted!"
+        contentContainer.appendChild(cardHead);
+        let cardBody = document.createElement('div');
+        cardBody.className = "card-body";
+
         let likeCount = document.createElement('p');
         likeCount.id = 'like' + chatMessage['id'].toString();
         likeCount.innerHTML = "LIKES: " + chatMessage['likeCount'];
@@ -52,9 +60,8 @@ function addMessage(message) {
         postOwner.addEventListener('click', function () {
             location.href = window.location.href + 'profile/' + chatMessage['userID'];
 
-
-
         })
+        
         startForm.action = "/conversation/" + chatMessage['userID'];
         startForm.method = 'post';
         startForm.enctype = "multipart/form-data";
@@ -70,6 +77,7 @@ function addMessage(message) {
         //like.onclick = sendLike(chatMessage['id']);
         like.className = 'fas fa-cloud';
         contentContainer.innerHTML += "<b>" + chatMessage['username'] + "</b>: " + chatMessage["comment"] +  "<br/>";
+        contentContainer.appendChild(cardBody)
         contentContainer.appendChild(like);
         contentContainer.appendChild(likeCount);
         contentContainer.appendChild(postOwner);
