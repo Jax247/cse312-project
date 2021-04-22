@@ -36,6 +36,7 @@ availPaths.set('/profile', 'content');
 availPaths.set("/Authentication/Auth/styles.css", 'content');
 availPaths.set("/Authentication/Registration/styles.css", 'content');
 availPaths.set("/Authentication/Auth/auth.js", 'content');
+availPaths.set("/register?", 'redirect');
 
 
 
@@ -49,8 +50,6 @@ content.set('/image', ["./image", "image/jpeg \r\nX-Content-Type-Options: nosnif
 content.set("/style.css", ["./style.css", "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/function.js", ["./function.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/Authentication/Auth/auth.js", ["./Authentication/Auth/auth.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
-
-
 content.set("/conversation/dmFunctions.js", ["./dmFunctions.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/images", ["null", "text/html; \r\nX-Content-Type-Options: nosniff", false, "utf8"])
 content.set('/chatScreen', []);
@@ -65,6 +64,7 @@ redirects.set('/hi', "/hello");
 redirects.set('/comment', '/');
 redirects.set('/image-upload', '/');
 redirects.set('/register', '/');
+redirects.set('/register?', '/');
 redirects.set('/registerNewAccount', '/');
 
 
@@ -91,7 +91,6 @@ MongoClient.connect(url, function (err, db) {
 });
 //TODO: CHANGE HOW WE IMPORT A MESSAGE BY GETTING LIKES
 importFromMongo()
-
 
 
 
@@ -262,7 +261,7 @@ function notLoggedInHandler(path, socket, port, lines, data) {
             console.log("IS OTHER");
             return;
         default:
-            response = buildHtmlResponse('./login.html', []);
+            response = buildHtmlResponse('./Authentication/Login/login.html', []);
     }
     if (response) {
         socket.write(response);
