@@ -36,7 +36,6 @@ availPaths.set('/profile', 'content');
 availPaths.set("/Authentication/Auth/styles.css", 'content');
 availPaths.set("/Authentication/Registration/styles.css", 'content');
 availPaths.set("/Authentication/Auth/auth.js", 'content');
-availPaths.set("/register?", 'redirect');
 
 
 
@@ -50,6 +49,8 @@ content.set('/image', ["./image", "image/jpeg \r\nX-Content-Type-Options: nosnif
 content.set("/style.css", ["./style.css", "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/function.js", ["./function.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/Authentication/Auth/auth.js", ["./Authentication/Auth/auth.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
+
+
 content.set("/conversation/dmFunctions.js", ["./dmFunctions.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/images", ["null", "text/html; \r\nX-Content-Type-Options: nosniff", false, "utf8"])
 content.set('/chatScreen', []);
@@ -64,7 +65,6 @@ redirects.set('/hi', "/hello");
 redirects.set('/comment', '/');
 redirects.set('/image-upload', '/');
 redirects.set('/register', '/');
-redirects.set('/register?', '/');
 redirects.set('/registerNewAccount', '/');
 
 
@@ -201,6 +201,7 @@ net.createServer(function (socket) {
                 } else {
                     ////console.log(lines);
                     ////console.log("SHOULD BE HERE");
+                    console.log(requestPath)
                     notLoggedInHandler(requestPath, socket, port, lines, extendedBuffer);
                     //socket.write(buildHtmlResponse('./login.html', []));
                 }
@@ -216,7 +217,7 @@ net.createServer(function (socket) {
 
 //function paths(check, socket, port, lines) {
 function notLoggedInHandler(path, socket, port, lines, data) {
-    //console.log("NOT LOGGED IN");
+    console.log("NOT LOGGED IN");
     console.log(path);
     let tempPath;
     if (notLoggedInPaths.has(path) || path.startsWith('/image')) {
@@ -252,7 +253,7 @@ function notLoggedInHandler(path, socket, port, lines, data) {
             }
             break
         case '/register?':
-            ////console.log("SENDING REGISTER");
+            console.log("SENDING REGISTER");
             response = buildHtmlResponse('./Authentication/Registration/Register.html', []);
             break;
 
