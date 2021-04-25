@@ -7,6 +7,7 @@ class User{
         this.likes = new Set();
         this.chats = new Map();
         this.posts = [];
+        this.hasProfilePic = false;
     }
 
     //add new person to who you chat with

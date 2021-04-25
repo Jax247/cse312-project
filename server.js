@@ -37,7 +37,7 @@ availPaths.set('/profile', 'content');
 availPaths.set("/Authentication/Auth/styles.css", 'content');
 availPaths.set("/Authentication/Registration/styles.css", 'content');
 availPaths.set("/Authentication/Auth/auth.js", 'content');
-
+availPaths.set("pictureProfiles/defaultProfile.jpg", 'content');
 
 
 let content = new Map();
@@ -51,15 +51,12 @@ content.set("/style.css", ["./style.css", "text/css; \r\nX-Content-Type-Options:
 content.set("/function.js", ["./function.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/profile/function.js", ["./function.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/Authentication/Auth/auth.js", ["./Authentication/Auth/auth.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
-
-
 content.set("/conversation/dmFunctions.js", ["./dmFunctions.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/images", ["null", "text/html; \r\nX-Content-Type-Options: nosniff", false, "utf8"])
 content.set('/chatScreen', []);
 content.set('/profile', 'content');
 content.set("/Authentication/Auth/styles.css", ["./Authentication/Auth/styles.css",
     "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
-
 
 
 let redirects = new Map();
@@ -81,7 +78,6 @@ let allUsers = new Map();
 let tokenUsers = new Map();
 
 
-
 var url = "mongodb://localhost:27017/";
 //var url = 'mongodb://mongo:27017';
 
@@ -93,7 +89,6 @@ MongoClient.connect(url, function (err, db) {
 });
 //TODO: CHANGE HOW WE IMPORT A MESSAGE BY GETTING LIKES
 importFromMongo()
-
 
 
 fs.readdirSync('./User_Uploads').forEach(upload => {
@@ -214,9 +209,6 @@ net.createServer(function (socket) {
 }).listen({host: "0.0.0.0", port: 8000});
 
 
-
-
-
 //function paths(check, socket, port, lines) {
 function notLoggedInHandler(path, socket, port, lines, data) {
     console.log("NOT LOGGED IN");
@@ -241,7 +233,6 @@ function notLoggedInHandler(path, socket, port, lines, data) {
                 let userName = formAsList[0].content.toString();
                 let password = formAsList[1].content.toString();
                 //Still need to add check of user and password leng for now good
-                //TODO:
                 let currUser = sendCookie(userName, socket);
                 createUserInDB(formAsList[0].content.toString(), formAsList[1].content.toString(), currUser);
                 //Send cookie which adds their session token
@@ -299,12 +290,12 @@ function sendCookie(username, socket) {
 
 function sendActiveUsers() {
     let users = [];
-    upgradedUsers.forEach((values,keys)=>{
+    upgradedUsers.forEach((values, keys) => {
         users.push(values.userId)
     })
-    let sendMsg = JSON.stringify({activeUsers: upgradedUsers.size, userId:users})
+    let sendMsg = JSON.stringify({activeUsers: upgradedUsers.size, userId: users})
 
-    for (let [ipPort, user] of upgradedUsers){
+    for (let [ipPort, user] of upgradedUsers) {
         ////console.log("SENDING", sendMsg);
         user.socket.write(createWebsocketFrame(new Message(sendMsg, 'text')));
 
@@ -348,14 +339,13 @@ function usernameExists(username) {
     return doesExist;
 }
 
-//TODO: CREATE USER IN DB need to salt
 function createUserInDB(username, password, user) {
     ////console.log("USER: " + user.chats);
     MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
 
-        var user = {username: username, password: password, chats : "", posts: ""};
+        var user = {username: username, password: password, chats: "", posts: "", hasProfilePic: false};
         dbo.collection("users").insertOne(user, function (err, res) {
             if (err) throw err;
             ////console.log("1 document inserted");
@@ -479,7 +469,7 @@ function handleAsWebsocket(socket, data) {
                 //likeOrDisLike()
 
                 //handle Direct message seperate
-            }else if (jTemp.dm === true) {
+            } else if (jTemp.dm === true) {
                 frameType = 'dm';
 
 
@@ -497,7 +487,7 @@ function handleAsWebsocket(socket, data) {
                     let currUser = tokenUsers.get(jTemp.dmnotify).username
                     //allUsers.get(currUser).socket = socket;
 
-                    allUsers.get(currUser).location = 'websocketDM/'+jTemp.userRecvid ;
+                    allUsers.get(currUser).location = 'websocketDM/' + jTemp.userRecvid;
                     allUsers.get(currUser).socket = socket;
 
                     //("USER TO RECV: " + jTemp.userRecvid);
@@ -517,14 +507,11 @@ function handleAsWebsocket(socket, data) {
                 }
 
 
-
-
             } else if (tokenUsers.has(jTemp.notify)) {
                 //console.log("UPDATING USERS");
 
                 currUserToken = jTemp['notify'];
 
-                //TODO: Add to JSON object then keep this list up to date on client side
                 tokenUsers.get(jTemp.notify).setSocket(socket);
                 //upgradedUsers.get(socket.remoteAddress + socket.remotePort.toString()).sockType = '/websocket';
                 upgradedUsers.get(socket.remoteAddress + socket.remotePort.toString())
@@ -562,7 +549,6 @@ function handleAsWebsocket(socket, data) {
         //////console.log(DECODED);
 
 
-
         message = new Message(JSON.stringify(DECODED), frameType, messageHistory.length, 0);
         sendFrame = createWebsocketFrame(message);
 
@@ -573,11 +559,10 @@ function handleAsWebsocket(socket, data) {
 
             message.ownerId = DECODED.userID
             allUsers.get(message.ownerId).addPosts(message.id);
-            //TODO: WRITE POST TO DB USER
+            //TODO: WRITE POST TO DB USER I think its done Lol
             messageHistory.push(message);
             ////console.log("MESSAGE: " + message.data);
             storePost(message, message.ownerId);
-
 
 
         }
@@ -600,8 +585,7 @@ function handleAsWebsocket(socket, data) {
 }
 
 
-//TODO: CHECK IF THEY HAVE EXISTING CONVERSATION
-//TODO: SAVE MESSAGES TO THEIR CHAT
+
 function handleDirectMessage(jObject) {
     //console.log("HANDLING")
     //console.log(allUsers);
@@ -617,7 +601,6 @@ function handleDirectMessage(jObject) {
         if (!sendUser.chats.has(recvName)) {
             //Add the message to current Map
 
-            //TODO: Uncomment recv Stuff
             sendUser.addChat(recvName);
             //console.log("RECV: " , recvUser)
             //console.log("SENDUSER: ", sendUser);
@@ -649,7 +632,7 @@ function handleDirectMessage(jObject) {
             if (recvUser.location === 'websocketDM/' + senderName) {
                 //console.log("USER AT DM");
                 recvUser.socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
-            //else if (recvUser.location === 'index')
+                //else if (recvUser.location === 'index')
             } else {
                 //console.log("USER AT INDEX");
                 recvUser.socket.write(createWebsocketFrame(new Message(JSON.stringify({hasMessage: senderName}), 'text')));
@@ -658,7 +641,6 @@ function handleDirectMessage(jObject) {
         } else {
             //console.log("USER OFFLINE");
         }
-
 
 
         tokenUsers.get(jObject.senderToken).socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
@@ -675,7 +657,7 @@ function handleDirectMessage(jObject) {
 function addDirectMessageToMongo(sendUser, recvUser, message) {
 
 
-    MongoClient.connect(url, function(err, db) {
+    MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
 
@@ -683,11 +665,11 @@ function addDirectMessageToMongo(sendUser, recvUser, message) {
         var sendUserQuery = {username: sendUser.username};
         //console.log("CHATS: " + JSON.stringify([...sendUser.chats]));
 
-        let postReplace = {$set: {chats :JSON.stringify([...sendUser.chats])}};
+        let postReplace = {$set: {chats: JSON.stringify([...sendUser.chats])}};
 
 
         var recvUserQuery = {username: recvUser.username};
-        var recvMessages = {$set: {chats :JSON.stringify([...recvUser.chats])}};
+        var recvMessages = {$set: {chats: JSON.stringify([...recvUser.chats])}};
         // let tempSet = allUsers.get(username).likes;
         // let newValues = {$set: {likes: JSON.stringify([...tempSet.keys()])}};
 
@@ -699,7 +681,6 @@ function addDirectMessageToMongo(sendUser, recvUser, message) {
         });
 
 
-
         dbo.collection("users").updateOne(recvUserQuery, recvMessages, function (err, res) {
             if (err) throw err;
             //console.log("1 document updated");
@@ -708,14 +689,11 @@ function addDirectMessageToMongo(sendUser, recvUser, message) {
     });
 }
 
-
-//TODO: go to user collection get user with username update their list of likes
-//TODO: ALSO UPDATE LIKE COUNT OF POST USING POST ID:
 function addLikeToMongo(username, postId, doesLike) {
-    MongoClient.connect(url, function(err, db) {
+    MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
-        var userQuery = {username: username };
+        var userQuery = {username: username};
         let postQuery = {id: postId}
 
 
@@ -723,23 +701,20 @@ function addLikeToMongo(username, postId, doesLike) {
 
 
         let tempSet = allUsers.get(username).likes;
-        let newValues = { $set: {likes: JSON.stringify([...tempSet.keys()]) } };
+        let newValues = {$set: {likes: JSON.stringify([...tempSet.keys()])}};
 
 
-
-        dbo.collection("users").updateOne(userQuery, newValues, function(err, res) {
+        dbo.collection("users").updateOne(userQuery, newValues, function (err, res) {
             if (err) throw err;
             //console.log("1 document updated");
             //db.close();
         });
 
-        dbo.collection("message").updateOne(postQuery, postReplace, function(err, res) {
+        dbo.collection("message").updateOne(postQuery, postReplace, function (err, res) {
             if (err) throw err;
             //console.log("1 document updated");
             db.close();
         });
-
-
 
 
     });
@@ -765,7 +740,6 @@ function handleLike(like) {
             doesLike = true;
         }
 
-        //TODO: check if works
         addLikeToMongo(tokenUsers.get(like.sessionToken).username, like.messageId, doesLike);
 
         messageHistory[parseInt(like.messageId)].updateLike();
@@ -788,7 +762,7 @@ function handleLike(like) {
 }
 
 function importFromMongo() {
-     MongoClient.connect(url, function (err, db) {
+    MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
         //console.log("GETTING COLLECTIOn");
@@ -796,7 +770,7 @@ function importFromMongo() {
         var col = dbo.collection('message').find();
 
         //Import Messages
-         col.each( function (err, document) {
+        col.each(function (err, document) {
             if (document) {
                 let jsonMessage = JSON.stringify(
                     {
@@ -818,7 +792,7 @@ function importFromMongo() {
         var users = dbo.collection('users').find();
         users.each(function (err, document) {
             if (document) {
-                let newUser = new User(document.username, "", "", document.likes);
+                let newUser = new User(document.username, "", null, document.likes);
                 if (document.chats !== "" && document.chats) {
                     //console.log("SETTING");
                     console.log((document.chats));
@@ -846,7 +820,7 @@ function importFromMongo() {
 
 }
 
-function jsonToMap(tooDarr)  {
+function jsonToMap(tooDarr) {
 
     let resMap = new Map();
 
@@ -863,10 +837,11 @@ function storePost(message, ownerId) {
         var dbo = db.db("mydb");
         let tempJson = JSON.parse(message.data);
         var myobj =
-            {   username: tempJson.username,
+            {
+                username: tempJson.username,
                 comment: tempJson.comment,
                 contentType: message.contentType,
-                id:tempJson.id,
+                id: tempJson.id,
                 likeCount: tempJson.likeCount,
                 userID: tempJson.userID
             };
@@ -877,11 +852,11 @@ function storePost(message, ownerId) {
             //db.close;
         });
 
-        var userQuery = {username: ownerId };
+        var userQuery = {username: ownerId};
         let postReplace = {$set: {posts: JSON.stringify(allUsers.get(ownerId).posts)}};
 
 
-        dbo.collection("users").updateOne(userQuery, postReplace, function(err, res) {
+        dbo.collection("users").updateOne(userQuery, postReplace, function (err, res) {
             if (err) throw err;
             //console.log("1 document updated");
             db.close();
@@ -977,7 +952,7 @@ function postRequest(data, lines, requestPath, socket, port) {
     ////console.log("LINES: ", lines);
     ////console.log("END OF LINES");
 
-    let response;
+    let response = buildRedirect('/', port);
     let userId;
     if (requestPath.includes('/conversation')) {
         requestPath = '/conversation'
@@ -1049,19 +1024,56 @@ function postRequest(data, lines, requestPath, socket, port) {
             //console.log(cookie);
             if (tokenUsers.has(cookie)) {
                 //console.log(tokenUsers.get(cookie));
-                //TODO: NOT DONDE: check the value in header
 
-                   // response = buildRedirect('/', port);
+                // response = buildRedirect('/', port);
 
-                    response = buildHtmlResponse('./chatRender.html', []);
+                response = buildHtmlResponse('./chatRender.html', []);
 
 
             }
+            break;
+        case '/profilePic':
+
+            //Only allows for jpeg upload
+            if (formAsList.length > 0 && formAsList[0] &&
+                (formAsList[0].contentType.toString().includes('image/jpg') || formAsList[0].contentType.toString().includes('image/jpeg'))) {
+
+
+                ////console.log("REACHED IMAGE UPLOAD:  ", formAsList[1].contentType);
+                let token = getValueFromHeader("sessionToken=", getHeaderInfo("Cookie:", lines));
+                let nameOfImage = tokenUsers.get(token).username;
+                tokenUsers.get(token).hasProfilePic = true;
+                updateProfilePic(nameOfImage);
+                let contentType = formAsList[0].contentType;
+
+                ////console.log("PRINTING CONTENT:  ", formAsList[0].contentType);
+                fs.writeFile('./pictureProfiles/' + nameOfImage + '.jpg', formAsList[0].content, function (error) {
+                    if (error) return //console.log(error);
+                });
+
+                let newUpload = new Upload('./User_Uploads/' + nameOfImage, '', contentType);
+
+                userUploads.push(newUpload);
+
+                //if(userUploads.includes())
+
+
+                ////console.log("ADDED ANOTHER IMAGE :  SIZE: ", userUploads.length);
+                response = buildRedirect('/profile/' + nameOfImage, port);
+            }
+
+            break;
 
     }
     if (response) {
         socket.write(response);
     }
+}
+
+//TODO: Chage boolean to true of user in db
+function updateProfilePic(ownerId) {
+
+
 }
 
 function paths(check, socket, port, lines) {
@@ -1074,7 +1086,7 @@ function paths(check, socket, port, lines) {
     } else if (check === '/') {
         expr = "default";
 
-    }else if(check.startsWith('/profile')) {
+    } else if (check.startsWith('/profile')) {
         expr = '/profile';
 
 
@@ -1090,9 +1102,9 @@ function paths(check, socket, port, lines) {
         expr = "built";
         check = '/images'
         builtContent = buildImageResponse(name, images);
-    } else if (check.includes("/image") || check.includes("/User_Uploads") && check !== "/image") {
+    } else if (check.includes("/image") || check.includes("/User_Uploads") || check.startsWith('/pictureProfiles/') && check !== "/image") {
         let fileName = "." + check;
-        ////console.log(userUploads);
+        console.log("SHOULD RENDER IMAGE", check);
         if (check === "/User_Uploads") {
             contentType = userUploads.get(check).contentType;
         }
@@ -1134,7 +1146,7 @@ function paths(check, socket, port, lines) {
         case "/websocket":
             response = createHandshake(socket, lines);
             //console.log("INIT WEB SOCK");
-            upgradedUsers.set(socket.remoteAddress + socket.remotePort.toString(), new Client(socket.remoteAddress, socket.remotePort,expr, socket));
+            upgradedUsers.set(socket.remoteAddress + socket.remotePort.toString(), new Client(socket.remoteAddress, socket.remotePort, expr, socket));
             //console.log(messageHistory);
             ////console.log(messageHistory.length);
             if (expr !== '/websocketDM') {
@@ -1153,8 +1165,9 @@ function paths(check, socket, port, lines) {
             console.log("REAChED");
             let paths = check.split('/');
             console.log(paths);
+            let cookie = getValueFromHeader("sessionToken=", getHeaderInfo("Cookie:", lines));
             if (allUsers.has(paths[paths.length - 1])) {
-                response = sendProfile(check);
+                response = sendProfile(check, cookie);
 
             }
 
@@ -1170,23 +1183,45 @@ function paths(check, socket, port, lines) {
     socket.write(response);
 }
 
-function sendProfile(path) {
+function sendProfile(path, token) {
+    console.log("THEIR COOKIE:" + token);
     let content = fs.readFileSync('./profile.html');
     content = content.toString();
     console.log("PATH: " + path);
-    let tempName = path.substr(path.indexOf('/', 1)+ 1);
+    let tempName = path.substr(path.indexOf('/', 1) + 1);
+    console.log("TEMPNAME: " + tempName);
+    console.log("TOKENNAME: " + tokenUsers.get(token).username);
+    if (tempName === tokenUsers.get(token).username) {
+        console.log("ADDING FORM");
+        content = content.replace('{{upload}}',
+            '<form action="/profilePic" id="image-form" method="post" enctype="multipart/form-data">\r\n' +
+            '<label for="form-file">Image: </label>\r\n' +
+            '<input id="form-file" type="file" name="upload" />\r\n' +
+            '<br/>\r\n' +
+            '<input type="submit" value="Submit" />\r\n' +
+            '</form>\r\n');
+    } else {
+        content = content.replace('{{upload}}', '');
+    }
     let user = allUsers.get(tempName);
-    console.log("NAME: " + tempName);
-    console.log(user);
+    let imageSrc = '"/pictureProfiles/defaultProfile.jpg"';
+    if (user.hasProfilePic) {
+        imageSrc = '"/pictureProfiles/' + user.username + '.jpg"';
+    }
+    content = content.replace('{{profilePic}', '<img src=' + imageSrc + ' alt=""/>\r\n');
+
+
+
+
+
     let usernameRender = "<p>" + user.username + "</p>";
     let postIds = "";
-    for (let post in user.posts) {
-        console.log("POST: " + post + "TYPE: " + typeof post + "MESSAGE: ", messageHistory[parseInt(post)]);
+    let post;
+    for (let i = 0; i < user.posts.length; i++) {
+        post = parseInt(user.posts[i]);
         let jPost = JSON.parse(messageHistory[parseInt(post)].data);
-        console.log("JPOST: " , jPost);
-       postIds += '<p>'  + jPost.comment + '</p> \r\n\r\n'
+        postIds += '<p>' + jPost.comment + '</p> \r\n\r\n'
     }
-    //user.posts.forEach(post => postIds += '<p>'  + messageHistory[post].data + messageHistory[post].data.comment + '</p> \r\n\r\n');
 
     content = content.replace('{{username}}', usernameRender)
         .replace('{{post}}', postIds);
@@ -1198,11 +1233,7 @@ function sendProfile(path) {
         content;
 
 
-
 }
-
-
-
 
 
 function createHandshake(socket, lines) {
