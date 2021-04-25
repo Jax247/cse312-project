@@ -23,6 +23,7 @@ availPaths.set('/image-upload', 'redirect');
 availPaths.set('/utf.txt', 'content')
 availPaths.set('/style.css', 'content');
 availPaths.set('/function.js', 'content');
+availPaths.set('/profile/function.js', 'content');
 availPaths.set('/conversation/dmFunctions.js', 'content');
 availPaths.set('/images', 'content');
 availPaths.set('/image', 'content');
@@ -48,6 +49,7 @@ content.set('/image', ["./image", "image/jpeg \r\nX-Content-Type-Options: nosnif
     true, "utf8"])
 content.set("/style.css", ["./style.css", "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/function.js", ["./function.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
+content.set("/profile/function.js", ["./function.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/Authentication/Auth/auth.js", ["./Authentication/Auth/auth.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 
 
@@ -80,8 +82,8 @@ let tokenUsers = new Map();
 
 
 
-//var url = "mongodb://localhost:27017/";
-var url = 'mongodb://mongo:27017';
+var url = "mongodb://localhost:27017/";
+//var url = 'mongodb://mongo:27017';
 
 MongoClient.connect(url, function (err, db) {
     if (err) throw err;
@@ -221,7 +223,6 @@ function notLoggedInHandler(path, socket, port, lines, data) {
     console.log(path);
     let tempPath;
     if (notLoggedInPaths.has(path) || path.startsWith('/image')) {
-
         tempPath = path;
         path = 'other';
     }
@@ -242,11 +243,7 @@ function notLoggedInHandler(path, socket, port, lines, data) {
                 //Still need to add check of user and password leng for now good
                 //TODO:
                 let currUser = sendCookie(userName, socket);
-
                 createUserInDB(formAsList[0].content.toString(), formAsList[1].content.toString(), currUser);
-
-
-
                 //Send cookie which adds their session token
                 response = buildHtmlResponse('./Authentication/Registration/Register.html', []);
 
@@ -1153,8 +1150,13 @@ function paths(check, socket, port, lines) {
 
         case '/profile':
             //console.log("SENDING PROFILE");
+            console.log("REAChED");
+            let paths = check.split('/');
+            console.log(paths);
+            if (allUsers.has(paths[paths.length - 1])) {
+                response = sendProfile(check);
 
-            response = sendProfile(check);
+            }
 
             break;
         case "default":
@@ -1171,12 +1173,20 @@ function paths(check, socket, port, lines) {
 function sendProfile(path) {
     let content = fs.readFileSync('./profile.html');
     content = content.toString();
+    console.log("PATH: " + path);
     let tempName = path.substr(path.indexOf('/', 1)+ 1);
     let user = allUsers.get(tempName);
-    //console.log(user);
+    console.log("NAME: " + tempName);
+    console.log(user);
     let usernameRender = "<p>" + user.username + "</p>";
-    let postIds;
-    user.posts.forEach(post => postIds += '<p>' + post + '</p> \r\n\r\n');
+    let postIds = "";
+    for (let post in user.posts) {
+        console.log("POST: " + post + "TYPE: " + typeof post + "MESSAGE: ", messageHistory[parseInt(post)]);
+        let jPost = JSON.parse(messageHistory[parseInt(post)].data);
+        console.log("JPOST: " , jPost);
+       postIds += '<p>'  + jPost.comment + '</p> \r\n\r\n'
+    }
+    //user.posts.forEach(post => postIds += '<p>'  + messageHistory[post].data + messageHistory[post].data.comment + '</p> \r\n\r\n');
 
     content = content.replace('{{username}}', usernameRender)
         .replace('{{post}}', postIds);
