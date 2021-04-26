@@ -488,10 +488,22 @@ function handleAsWebsocket(socket, data) {
                     sendActiveUsers();
                     let currUser = tokenUsers.get(jTemp.dmnotify).username
                     //allUsers.get(currUser).socket = socket;
+                    //let jHasProfilePic = JSON;
+                        //JSON.stringify({whoHasPic: true});
+                    let profilePicUsers = [];
+                    if (allUsers.get(currUser).hasProfilePic) {
+                        profilePicUsers.push(currUser);
+                    }
+                    console.log(allUsers.get(jTemp.userRecvid))
+                    if (allUsers.get(jTemp.userRecvid).hasProfilePic) {
+                        profilePicUsers.push(jTemp.userRecvid);
+                    }
+                    let jHasProfilePic = JSON.stringify({hasProfilePic: profilePicUsers});
 
+                    //TODO: Send which user has profile pic
                     allUsers.get(currUser).location = 'websocketDM/' + jTemp.userRecvid;
                     allUsers.get(currUser).socket = socket;
-
+                    socket.write(createWebsocketFrame(new Message(jHasProfilePic, frameType, "", "", "")));
                     //("USER TO RECV: " + jTemp.userRecvid);
                     if (allUsers.get(currUser).chats.has(jTemp.userRecvid)) {
                         ////console.log("SHOULD SEND MESSAGE");
@@ -797,6 +809,7 @@ function importFromMongo() {
         users.each(function (err, document) {
             if (document) {
                 let newUser = new User(document.username, "", null, document.likes);
+                newUser.hasProfilePic = document.hasProfilePic;
                 if (document.chats !== "" && document.chats) {
                     //console.log("SETTING");
                     console.log((document.chats));
@@ -805,6 +818,8 @@ function importFromMongo() {
                 if (document.posts !== "" && document.posts) {
                     newUser.posts = JSON.parse(document.posts);
                 }
+
+
 
                 allUsers.set(document.username, newUser);
             }
@@ -1208,6 +1223,8 @@ function paths(check, socket, port, lines) {
             if (allUsers.has(paths[paths.length - 1])) {
                 response = sendProfile(check, cookie);
 
+            } else {
+                response = buildResponseNotFound("User does not exist");
             }
 
             break;

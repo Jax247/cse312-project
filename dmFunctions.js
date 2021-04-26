@@ -3,6 +3,40 @@ function startUp() {
 
 }
 
+function addMessage(message) {
+    const chatMessage = JSON.parse(message.data);
+    if (chatMessage.like === 'sent') {
+        updateLike(message);
+    } else {
+        let contentContainer = document.createElement('div');
+        console.log("ID: " + chatMessage['id']);
+        contentContainer.className = "card bg-light mb-3";
+        contentContainer.id = "messsage" + chatMessage['id'];
+        let cardHead = document.createElement('div');
+        cardHead.className = "card-header";
+        cardHead.innerHTML = chatMessage['username'] + " Posted!"
+        contentContainer.appendChild(cardHead);
+        let cardBody = document.createElement('div');
+        cardBody.className = "card-body";
+
+
+        //likde.onclick = sendLike(chatMessage['id']);
+        contentContainer.innerHTML += "<b>" + chatMessage['userID'] + "</b>: " + chatMessage["comment"] +  "<br/> \r\n";
+        let profilePicSrc = '"pictureProfiles/defaultProfile.jpg"';
+        if (chatMessage['hasProfilePic']) {
+            profilePicSrc = '"pictureProfiles/' + chatMessage['userID'] + '.jpg"';
+        }
+        contentContainer.innerHTML += '<img id="profilePic" src=' + profilePicSrc + '>';
+
+        contentContainer.appendChild(cardBody)
+        contentContainer.appendChild(like);
+        contentContainer.appendChild(postOwner);
+        contentContainer.appendChild(startForm);
+        document.getElementById('chat').appendChild(contentContainer);
+
+    }
+}
+
 
 
 function sendMessage() {
@@ -61,12 +95,6 @@ function startWebsocket() {
             console.log(event.data.toString());
             addMessage(event);
 
-        } else {
-            console.log("IS BINARY");
-            // binary frame
-            addImage(event);
-            //const view = new DataView(event);
-            //console.log(view.getInt32(0));
         }
     });
 
