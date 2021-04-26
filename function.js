@@ -59,7 +59,6 @@ function addMessage(message) {
         postOwner.innerHTML = chatMessage['userID'];
         postOwner.addEventListener('click', function () {
             location.href = window.location.href + 'profile/' + chatMessage['userID'];
-
         })
         
         startForm.action = "/conversation/" + chatMessage['userID'];
@@ -76,7 +75,7 @@ function addMessage(message) {
         });
         //like.onclick = sendLike(chatMessage['id']);
         like.className = 'fas fa-cloud';
-        contentContainer.innerHTML += "<b>" + chatMessage['username'] + "</b>: " + chatMessage["comment"] +  "<br/>";
+        contentContainer.innerHTML += "<b>" + chatMessage['username'] + "</b>: " + chatMessage["comment"] +  "<br/> \r\n";
         contentContainer.appendChild(cardBody)
         contentContainer.appendChild(like);
         contentContainer.appendChild(likeCount);

@@ -1041,25 +1041,23 @@ function postRequest(data, lines, requestPath, socket, port) {
 
                 ////console.log("REACHED IMAGE UPLOAD:  ", formAsList[1].contentType);
                 let token = getValueFromHeader("sessionToken=", getHeaderInfo("Cookie:", lines));
-                let nameOfImage = tokenUsers.get(token).username;
+                let username = tokenUsers.get(token).username;
                 tokenUsers.get(token).hasProfilePic = true;
-                updateProfilePic(nameOfImage);
+                updateProfilePic(username);
                 let contentType = formAsList[0].contentType;
 
                 ////console.log("PRINTING CONTENT:  ", formAsList[0].contentType);
-                fs.writeFile('./pictureProfiles/' + nameOfImage + '.jpg', formAsList[0].content, function (error) {
+                fs.writeFile('./pictureProfiles/' + username + '.jpg', formAsList[0].content, function (error) {
                     if (error) return //console.log(error);
                 });
 
-                let newUpload = new Upload('./User_Uploads/' + nameOfImage, '', contentType);
 
-                userUploads.push(newUpload);
 
                 //if(userUploads.includes())
 
 
                 ////console.log("ADDED ANOTHER IMAGE :  SIZE: ", userUploads.length);
-                response = buildRedirect('/profile/' + nameOfImage, port);
+                response = buildRedirect('/profile/' + username, port);
             }
 
             break;
@@ -1208,7 +1206,7 @@ function sendProfile(path, token) {
     if (user.hasProfilePic) {
         imageSrc = '"/pictureProfiles/' + user.username + '.jpg"';
     }
-    content = content.replace('{{profilePic}', '<img src=' + imageSrc + ' alt=""/>\r\n');
+    content = content.replace('{{profilePic}', '<img id="profilePicture" src=' + imageSrc + ' alt="default.jpg"/>\r\n');
 
 
 
