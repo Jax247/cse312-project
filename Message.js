@@ -15,4 +15,10 @@ class Message{
 
     }
 
+    updateProfilePicStatus(){
+        let jSend = JSON.parse(this.data.toString());
+        jSend['hasProfilePic'] = true;
+        this.data = JSON.stringify(jSend);
+
+    }
 } module.exports = Message;

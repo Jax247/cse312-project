@@ -75,7 +75,13 @@ function addMessage(message) {
         });
         //like.onclick = sendLike(chatMessage['id']);
         like.className = 'fas fa-cloud';
-        contentContainer.innerHTML += "<b>" + chatMessage['username'] + "</b>: " + chatMessage["comment"] +  "<br/> \r\n";
+        contentContainer.innerHTML += "<b>" + chatMessage['userID'] + "</b>: " + chatMessage["comment"] +  "<br/> \r\n";
+        let profilePicSrc = '"pictureProfiles/defaultProfile.jpg"';
+        if (chatMessage['hasProfilePic']) {
+            profilePicSrc = '"pictureProfiles/' + chatMessage['userID'] + '.jpg"';
+        }
+        contentContainer.innerHTML += '<img id="profilePic" src=' + profilePicSrc + '>';
+
         contentContainer.appendChild(cardBody)
         contentContainer.appendChild(like);
         contentContainer.appendChild(likeCount);

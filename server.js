@@ -462,6 +462,8 @@ function handleAsWebsocket(socket, data) {
                 jTemp["id"] = idNum;
                 jTemp["likeCount"] = 0;
                 jTemp["userID"] = tokenUsers.get(currUserToken).username
+
+                jTemp["hasProfilePic"] = tokenUsers.get(currUserToken).hasProfilePic;
                 delete jTemp['sessionToken'];
 
                 DECODED = jTemp;
@@ -684,7 +686,7 @@ function addDirectMessageToMongo(sendUser, recvUser, message) {
         dbo.collection("users").updateOne(recvUserQuery, recvMessages, function (err, res) {
             if (err) throw err;
             //console.log("1 document updated");
-            //db.close();
+            db.close();
         });
     });
 }
@@ -693,9 +695,9 @@ function addLikeToMongo(username, postId, doesLike) {
     MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
+
         var userQuery = {username: username};
         let postQuery = {id: postId}
-
 
         let postReplace = {$set: {likeCount: messageHistory[parseInt(postId)].likeCount}};
 
@@ -778,10 +780,12 @@ function importFromMongo() {
                         comment: document.comment,
                         id: document.id,
                         likeCount: document.likeCount,
-                        userID: document.userID
+                        userID: document.userID,
+                        hasProfilePic: document.hasProfilePic
                     });
                 messageHistory.push(new Message(jsonMessage, document.contentType, messageHistory.length, document.likeCount));
             }
+
         });
 
         //console.log("MESSAGES")
@@ -804,6 +808,7 @@ function importFromMongo() {
 
                 allUsers.set(document.username, newUser);
             }
+            db.close();
         });
         //console.log("ALL USERS");
         //console.log(allUsers);
@@ -815,7 +820,6 @@ function importFromMongo() {
         //         allUsers.push(new User(document.username, document.contentType, messageHistory.length, 0));
         //     }
         // });
-        dbo.close
     });
 
 }
@@ -843,7 +847,9 @@ function storePost(message, ownerId) {
                 contentType: message.contentType,
                 id: tempJson.id,
                 likeCount: tempJson.likeCount,
-                userID: tempJson.userID
+                userID: tempJson.userID,
+                hasProfilePic: allUsers.get(ownerId).hasProfilePic
+
             };
 
         dbo.collection("message").insertOne(myobj, function (err, res) {
@@ -1042,7 +1048,17 @@ function postRequest(data, lines, requestPath, socket, port) {
                 ////console.log("REACHED IMAGE UPLOAD:  ", formAsList[1].contentType);
                 let token = getValueFromHeader("sessionToken=", getHeaderInfo("Cookie:", lines));
                 let username = tokenUsers.get(token).username;
+
+                let updatedUser = new User();
+                updatedUser = tokenUsers.get(token);
+                updatedUser.hasProfilePic = true;
+                let messagesToUpdate = updatedUser.posts;
+                console.log(messagesToUpdate);
+                messagesToUpdate.forEach(message => messageHistory[message].updateProfilePicStatus());
+                messagesToUpdate.forEach(message => console.log(messageHistory[message].data.toString()));
                 tokenUsers.get(token).hasProfilePic = true;
+                allUsers.get(username).hasProfilePic = true;
+                console.log("SHOULD BE TRUE: " + tokenUsers.get(token).hasProfilePic);
                 updateProfilePic(username);
                 let contentType = formAsList[0].contentType;
 
@@ -1069,9 +1085,34 @@ function postRequest(data, lines, requestPath, socket, port) {
 }
 
 //TODO: Chage boolean to true of user in db
+//TODO: Also find messages with ownerId and set hasProfilePic to true
 function updateProfilePic(ownerId) {
+    MongoClient.connect(url, function (err, db) {
+        if (err) throw err;
+        var dbo = db.db("mydb");
+
+        var userQuery = {username: ownerId};
+
+        let postQuery = {userID: ownerId}
+
+        let postReplace = {$set: {hasProfilePic: true}};
+        let userReplace = {$set: {hasProfilePic: true}}
 
 
+
+        dbo.collection("users").updateOne(userQuery, userReplace, function (err, res) {
+            if (err) throw err;
+            //console.log("1 document updated");
+            //db.close();
+        });
+
+        dbo.collection("message").updateMany(postQuery, postReplace, function (err, res) {
+            if (err) throw err;
+            //console.log("1 document updated");
+            db.close();
+        });
+
+    });
 }
 
 function paths(check, socket, port, lines) {
