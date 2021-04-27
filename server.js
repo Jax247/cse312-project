@@ -7,7 +7,7 @@ const Client = require('./Client');
 const Message = require('./Message');
 const User = require('./User');
 const MongoClient = require('mongodb').MongoClient;
-const assert = require('assert');
+const bcrypt = require('bcrypt');
 
 
 let notLoggedInPaths = new Map();
@@ -97,14 +97,6 @@ fs.readdirSync('./User_Uploads').forEach(upload => {
 
 net.createServer(function (socket) {
 
-
-    //console.log("SERVER STARTED");
-    //console.log(messageHistory);
-    //console.log(allUsers);
-
-    //if the client is logged in do the usual
-
-
     let waitingForContent = false;
     let extendedBuffer;
     let lines;
@@ -130,17 +122,6 @@ net.createServer(function (socket) {
         } else {
             //console.log("SOCKET UNDEFINED");
         }
-        //
-        // for (let [key, value] of tokenUsers) {
-        //     if (value.socket === socket) {
-        //         //console.log("MATCHING SOCKET");
-        //         tokenUsers.delete(key);
-        //     }
-        //     ////console.log("WE ARE IN LOOP");
-        //     ////console.log(value.socket.remoteAddress);
-        //     ////console.log(value.socket.remotePort);
-        // }
-        //console.log("SOECKT CLOSE");
     });
 
 
@@ -233,16 +214,48 @@ function notLoggedInHandler(path, socket, port, lines, data) {
                 let userName = formAsList[0].content.toString();
                 let password = formAsList[1].content.toString();
                 //Still need to add check of user and password leng for now good
-                let currUser = sendCookie(userName, socket);
-                createUserInDB(formAsList[0].content.toString(), formAsList[1].content.toString(), currUser);
+                //let currUser = sendCookie(userName, socket);
+                createUserInDB(formAsList[0].content.toString(), formAsList[1].content.toString(), socket);
                 //Send cookie which adds their session token
-                response = buildHtmlResponse('./Authentication/Registration/Register.html', []);
-
+                //response = buildHtmlResponse('./Authentication/Registration/Register.html', []);
+                return;
             }
             break
         case '/register?':
             console.log("SENDING REGISTER");
             response = buildHtmlResponse('./Authentication/Registration/Register.html', []);
+            break;
+
+        case '/loginForm':
+            console.log("LOGIN");
+            var formAsList = handleMultiPart(data, lines);
+            let userName = formAsList[0].content.toString();
+            let password = formAsList[1].content.toString();
+
+            let valid = false;
+            if (allUsers.has(userName)) {
+                bcrypt.compare(password, allUsers.get(userName).password, function (err, result) {
+                    if (result) {
+                        console.log("WE GOOD");
+                        sendCookie(userName, socket);
+                        valid = true;
+                        return true;
+                    } else {
+                        buildRedirect('/login', 8000)
+                        console.log("WE NOT GOOD");
+                    }
+                });
+            }
+            console.log(valid);
+
+
+            //
+            // if (validateCreds(userName, password)) {
+            //     sendCookie(userName, socket);
+            //
+            // } else {
+            //     console.log("WRONG PASS");
+            // }
             break;
 
         case 'other':
@@ -269,16 +282,18 @@ function sendCookie(username, socket) {
     if (allUsers.has(username)) {
         tokenUsers.set(token, allUsers.get(username));
         //console.log("RETURNING USER");
-    } else {
-        //console.log("NEW USERS");
-        let newUser = new User(username, token, socket, []);
-        allUsers.set(username, newUser)
-        tokenUsers.set(token, newUser);
-
     }
+    // } else {
+    //     //console.log("NEW USERS");
+    //     let newUser = new User(username, token, socket, []);
+    //     allUsers.set(username, newUser)
+    //     tokenUsers.set(token, newUser);
+    //
+    // }
 
     let content = fs.readFileSync('./index.html');
     let cookie = "HTTP/1.1 301 OK\r\n" +
+        //TODO: NEED TO FIX
         "Location: http://localhost:" + socket.localPort + "\r\n" +
         "Set-Cookie: sessionToken=" + token + "\r\n\r\n";
 
@@ -311,49 +326,52 @@ function checkForToken(lines) {
 }
 
 function usernameExists(username) {
-    let doesExist = false;
-    MongoClient.connect(url, function (err, db) {
-        if (err) throw err;
-        var dbo = db.db("mydb");
-        //console.log("CHECKING FOR USER");
+    return allUsers.has(username);
+}
 
-        var query = {username: username}
-        dbo.collection('users').find(query).toArray(function (err, doc) //find if a value exists
-        {
-            ////console.log(doc);
-            ////console.log(doc.length);
-
-            if (doc.length > 0) {
-
-                //console.log("DOES INCLUED : " + username);
-
-                doesExist = true;
+function createUserInDB(username, password, socket) {
 
 
-            }
-            db.close();
+    const saltRounds = 10;
+    let hashedPassword;
+    bcrypt.genSalt(saltRounds, function (err, salt) {
+        bcrypt.hash(password, salt, function (err, hash) {
+            // returns hash
+            console.log('HASH: ' + hash.toString());
+            hashedPassword = hash.toString();
+
+            MongoClient.connect(url, function (err, db) {
+                if (err) throw err;
+                var dbo = db.db("mydb");
+                console.log("EHY THER: " + hashedPassword);
+
+                var user = {username: username, password: hashedPassword, chats: "", posts: "", hasProfilePic: false};
+                dbo.collection("users").insertOne(user, function (err, res) {
+                    if (err) throw err;
+                    console.log("1 document inserted");
+                    db.close();
+                });
+            });
+            allUsers.set(username, new User(username, "", null, 0,  hashedPassword));
+            sendCookie(username, socket);
 
         });
     });
-    ////console.log("RETVAL : " + doesExist);
-    return doesExist;
 }
 
-function createUserInDB(username, password, user) {
-    ////console.log("USER: " + user.chats);
-    MongoClient.connect(url, function (err, db) {
-        if (err) throw err;
-        var dbo = db.db("mydb");
 
-        var user = {username: username, password: password, chats: "", posts: "", hasProfilePic: false};
-        dbo.collection("users").insertOne(user, function (err, res) {
-            if (err) throw err;
-            ////console.log("1 document inserted");
-            db.close();
-        });
-    });
-
-}
+// ////console.log("USER: " + user.chats);
+// MongoClient.connect(url, function (err, db) {
+//     if (err) throw err;
+//     var dbo = db.db("mydb");
+//
+//     var user = {username: username, password: password, chats: "", posts: "", hasProfilePic: false};
+//     dbo.collection("users").insertOne(user, function (err, res) {
+//         if (err) throw err;
+//         ////console.log("1 document inserted");
+//         db.close();
+//     });
+// });
 
 
 function createWebsocketFrame(message) {
@@ -489,7 +507,7 @@ function handleAsWebsocket(socket, data) {
                     let currUser = tokenUsers.get(jTemp.dmnotify).username
                     //allUsers.get(currUser).socket = socket;
                     //let jHasProfilePic = JSON;
-                        //JSON.stringify({whoHasPic: true});
+                    //JSON.stringify({whoHasPic: true});
                     let profilePicUsers = [];
                     if (allUsers.get(currUser).hasProfilePic) {
                         profilePicUsers.push(currUser);
@@ -597,7 +615,6 @@ function handleAsWebsocket(socket, data) {
     }
 
 }
-
 
 
 function handleDirectMessage(jObject) {
@@ -808,7 +825,7 @@ function importFromMongo() {
         var users = dbo.collection('users').find();
         users.each(function (err, document) {
             if (document) {
-                let newUser = new User(document.username, "", null, document.likes);
+                let newUser = new User(document.username, "", null, document.likes, document.password);
                 newUser.hasProfilePic = document.hasProfilePic;
                 if (document.chats !== "" && document.chats) {
                     //console.log("SETTING");
@@ -818,7 +835,6 @@ function importFromMongo() {
                 if (document.posts !== "" && document.posts) {
                     newUser.posts = JSON.parse(document.posts);
                 }
-
 
 
                 allUsers.set(document.username, newUser);
@@ -1083,7 +1099,6 @@ function postRequest(data, lines, requestPath, socket, port) {
                 });
 
 
-
                 //if(userUploads.includes())
 
 
@@ -1112,7 +1127,6 @@ function updateProfilePic(ownerId) {
 
         let postReplace = {$set: {hasProfilePic: true}};
         let userReplace = {$set: {hasProfilePic: true}}
-
 
 
         dbo.collection("users").updateOne(userQuery, userReplace, function (err, res) {
@@ -1270,9 +1284,6 @@ function sendProfile(path, token) {
         imageSrc = '"/pictureProfiles/' + user.username + '.jpg"';
     }
     content = content.replace('{{profilePic}', '<img id="profilePicture" src=' + imageSrc + ' alt="default.jpg"/>\r\n');
-
-
-
 
 
     let usernameRender = "<p>" + user.username + "</p>";

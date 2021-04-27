@@ -1,5 +1,5 @@
 class User{
-    constructor(userName, sessionToke, socket, likes) {
+    constructor(userName, sessionToke, socket, likes,password) {
         this.username = userName;
         this.sessionToken = sessionToke;
         this.socket = socket;
@@ -8,6 +8,7 @@ class User{
         this.chats = new Map();
         this.posts = [];
         this.hasProfilePic = false;
+        this.password = password;
     }
 
     //add new person to who you chat with
