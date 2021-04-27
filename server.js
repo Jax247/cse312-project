@@ -1156,7 +1156,12 @@ function paths(check, socket, port, lines) {
         expr = "built";
         check = '/images'
         builtContent = buildImageResponse(name, images);
-    } else if (check.includes("/image") || check.includes("/User_Uploads") || check.startsWith('/pictureProfiles/') && check !== "/image") {
+    } else if (check.includes("/image") || check.includes("/User_Uploads") || check.includes('/pictureProfiles/') && check !== "/image") {
+        console.log("HAS CONVERSATION:" + check);
+
+        if (check.startsWith('/conversation')) {
+            check = check.replace('/conversation', "");
+        }
         let fileName = "." + check;
         console.log("SHOULD RENDER IMAGE", check);
         if (check === "/User_Uploads") {

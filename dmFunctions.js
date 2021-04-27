@@ -5,35 +5,21 @@ function startUp() {
 
 function addMessage(message) {
     const chatMessage = JSON.parse(message.data);
-    if (chatMessage.like === 'sent') {
-        updateLike(message);
-    } else {
+    if (chatMessage.messageContent) {
         let contentContainer = document.createElement('div');
-        console.log("ID: " + chatMessage['id']);
-        contentContainer.className = "card bg-light mb-3";
-        contentContainer.id = "messsage" + chatMessage['id'];
-        let cardHead = document.createElement('div');
-        cardHead.className = "card-header";
-        cardHead.innerHTML = chatMessage['username'] + " Posted!"
-        contentContainer.appendChild(cardHead);
-        let cardBody = document.createElement('div');
-        cardBody.className = "card-body";
-
-
-        //likde.onclick = sendLike(chatMessage['id']);
-        contentContainer.innerHTML += "<b>" + chatMessage['userID'] + "</b>: " + chatMessage["comment"] +  "<br/> \r\n";
+        contentContainer.id = 'chatContainer';
+        contentContainer.innerHTML += "<b id='message'>" + chatMessage['sender'] + "</b>: " + chatMessage["messageContent"] + "<br/> \r\n";
         let profilePicSrc = '"pictureProfiles/defaultProfile.jpg"';
-        if (chatMessage['hasProfilePic']) {
-            profilePicSrc = '"pictureProfiles/' + chatMessage['userID'] + '.jpg"';
+        if (hasPics.has(chatMessage['sender'])) {
+
+            profilePicSrc = '"pictureProfiles/' + chatMessage['sender'] + '.jpg"';
         }
         contentContainer.innerHTML += '<img id="profilePic" src=' + profilePicSrc + '>';
-
-        contentContainer.appendChild(cardBody)
-        contentContainer.appendChild(like);
-        contentContainer.appendChild(postOwner);
-        contentContainer.appendChild(startForm);
         document.getElementById('chat').appendChild(contentContainer);
-
+    } else if (chatMessage.hasProfilePic) {
+        console.log(chatMessage.hasProfilePic);
+        chatMessage.hasProfilePic.forEach(val => hasPics.add(val));
+        chatMessage.hasProfilePic.forEach(val => console.log(val));
     }
 }
 
@@ -72,7 +58,7 @@ function getCookie(cname) {
 let socket;
 let token;
 let recvId;
-
+let hasPics = new Set();
 function startWebsocket() {
     console.log("STARTING SOCKET");
     token = getCookie("sessionToken");
