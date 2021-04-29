@@ -26,7 +26,6 @@ function sendLike(id) {
 function updateLike(like) {
     console.log("UPDATING LIKE");
     const jLike = JSON.parse(like.data);
-    console.log("ID UPDATE: " + jLike);
     let updateElement = document.getElementById('like' + jLike['messageId'].toString());
     console.log(updateElement);
 

@@ -558,7 +558,7 @@ function handleAsWebsocket(socket, data) {
                 allUsers.get(tokenUsers.get(currUserToken).username).location = 'index';
                 allUsers.get(tokenUsers.get(currUserToken).username).socket = socket;
 
-                let tempLikes = JSON.stringify(Array.from(tokenUsers.get(currUserToken).likes.keys()));
+                let tempLikes = JSON.stringify({yourLikes: Array.from(tokenUsers.get(currUserToken).likes.keys())});
                 ////console.log(tempLikes)
 
                 socket.write(createWebsocketFrame(new Message(tempLikes, frameType)));
