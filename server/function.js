@@ -19,7 +19,6 @@ function sendMessage() {
 function sendLike(id) {
     let sent = 'sent';
     console.log("ID: " + id)
-
     socket.send(JSON.stringify({'like': sent, 'sessionToken': token, 'messageId': id}))
 }
 
@@ -28,8 +27,12 @@ function updateLike(like) {
     const jLike = JSON.parse(like.data);
     let updateElement = document.getElementById('like' + jLike['messageId'].toString());
     console.log(updateElement);
-
     updateElement.innerHTML = jLike['totalLike'];
+}
+
+//Use createConvo button to create the button
+// that will link users to the chat screen
+function renderActiveUsers(listOfUsers) {
 
 }
 
@@ -38,6 +41,8 @@ function addMessage(message) {
     const chatMessage = JSON.parse(message.data);
     if (chatMessage.like === 'sent') {
         updateLike(message);
+    } else if (chatMessage.activeUsers > 1) {
+        renderActiveUsers(JSON.parse(chatMessage.userId));
     } else {
         let contentContainer = document.createElement('div');
         console.log("ID: " + chatMessage['id']);
@@ -45,7 +50,7 @@ function addMessage(message) {
         contentContainer.id = "messsage" + chatMessage['id'];
         let cardHead = document.createElement('div');
         cardHead.className = "card-header";
-        cardHead.innerHTML = chatMessage['username'] + " Posted!"
+        cardHead.innerHTML = chatMessage['username'] + " Posted!";
         contentContainer.appendChild(cardHead);
         let cardBody = document.createElement('div');
         cardBody.className = "card-body";
@@ -58,8 +63,8 @@ function addMessage(message) {
         postOwner.innerHTML = chatMessage['userID'];
         postOwner.addEventListener('click', function () {
             location.href = window.location.href + 'profile/' + chatMessage['userID'];
-        })
-        
+        });
+
         startForm.action = "/conversation/" + chatMessage['userID'];
         startForm.method = 'post';
         startForm.enctype = "multipart/form-data";
@@ -69,20 +74,21 @@ function addMessage(message) {
         startForm.appendChild(startButton);
 
         let like = document.createElement('i');
+        like.id = 'likeIcon';
         like.addEventListener('click', function () {
             sendLike(chatMessage['id']);
         });
         //like.onclick = sendLike(chatMessage['id']);
         like.className = 'fas fa-cloud';
-        contentContainer.innerHTML += "<b>" + chatMessage['userID'] + "</b>: " + chatMessage["comment"] +  "<br/> \r\n";
+        contentContainer.innerHTML += "<b>" + chatMessage['userID'] + "</b>: " + chatMessage["comment"] + "<br/> \r\n";
         let profilePicSrc = '"pictureProfiles/defaultProfile.jpg"';
         if (chatMessage['hasProfilePic']) {
             profilePicSrc = '"pictureProfiles/' + chatMessage['userID'] + '.jpg"';
         }
         contentContainer.innerHTML += '<img id="profilePic" src=' + profilePicSrc + '>';
 
-        contentContainer.appendChild(cardBody)
-        contentContainer.appendChild(like);
+        contentContainer.appendChild(cardBody);
+        cardBody.appendChild(like);
         contentContainer.appendChild(likeCount);
         contentContainer.appendChild(postOwner);
         contentContainer.appendChild(startForm);
@@ -90,6 +96,7 @@ function addMessage(message) {
 
     }
 }
+
 
 function addImage(image) {
     let chat = document.getElementById('chat');
@@ -128,7 +135,6 @@ function getCookie(cname) {
 }
 
 
-
 function createConvoButton(name) {
 
     let button = document.createElement('button');
@@ -156,7 +162,7 @@ function startWebsocket() {
     document.getElementById('createContainer').appendChild(createConvoButton(userName))
 
     socket.onopen = function (event) {
-        socket.send(JSON.stringify({'notify': token }));
+        socket.send(JSON.stringify({'notify': token}));
     };
 
 // Call the addMessage function whenever data is received from the server over the WebSocket

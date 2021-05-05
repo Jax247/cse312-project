@@ -78,8 +78,8 @@ let allUsers = new Map();
 let tokenUsers = new Map();
 
 
-//var url = "mongodb://localhost:27017/";
-var url = 'mongodb://mongo:27017';
+var url = "mongodb://localhost:27017/";
+//var url = 'mongodb://mongo:27017';
 
 MongoClient.connect(url, function (err, db) {
     if (err) throw err;
@@ -254,6 +254,7 @@ function sendCookie(username, socket) {
         Math.random().toString(36).substr(3, 9);
     if (allUsers.has(username)) {
         tokenUsers.set(token, allUsers.get(username));
+        allUsers.get(username).sessionToken = token;
     }
     let content = fs.readFileSync('./index.html');
     let cookie = "HTTP/1.1 301 OK\r\n" +
@@ -526,20 +527,17 @@ function handleAsWebsocket(socket, data) {
 
 
 function handleDirectMessage(jObject) {
-    //console.log("HANDLING")
+    console.log("HANDLING")
     //console.log(allUsers);
 
     let tokenUser = tokenUsers.get(jObject.senderToken);
     if (tokenUsers.has(jObject.senderToken)) {
-
         let senderName = tokenUsers.get(jObject.senderToken).username;
         let recvName = jObject.userRecvid;
         let sendUser = allUsers.get(senderName);
         let recvUser = allUsers.get(recvName);
-
         if (!sendUser.chats.has(recvName)) {
             //Add the message to current Map
-
             sendUser.addChat(recvName);
             //console.log("RECV: " , recvUser)
             //console.log("SENDUSER: ", sendUser);
@@ -551,11 +549,6 @@ function handleDirectMessage(jObject) {
 
         sendUser.addMessageToChat(recvName, messageToSave);
 
-        // if (upgradedUsers.get()) {
-        //
-        // }
-
-
         recvUser.addMessageToChat(senderName, messageToSave);
 
 
@@ -565,23 +558,18 @@ function handleDirectMessage(jObject) {
         addDirectMessageToMongo(sendUser, recvUser, messageToSave);
 
         //user Is on
-
         if (tokenUsers.has(recvUser.sessionToken)) {
-            //console.log("USER IS HERE");
             if (recvUser.location === 'websocketDM/' + senderName) {
                 //console.log("USER AT DM");
                 recvUser.socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
                 //else if (recvUser.location === 'index')
             } else {
-                //console.log("USER AT INDEX");
                 recvUser.socket.write(createWebsocketFrame(new Message(JSON.stringify({hasMessage: senderName}), 'text')));
 
             }
         } else {
             //console.log("USER OFFLINE");
         }
-
-
         tokenUsers.get(jObject.senderToken).socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
         ////console.log(sendUser);
         //console.log("USER:")
@@ -742,6 +730,9 @@ function importFromMongo() {
                 }
                 if (document.posts !== "" && document.posts) {
                     newUser.posts = JSON.parse(document.posts);
+                }
+                if (document.likes !== "" && document.likes) {
+                    newUser.likes = JSON.parse(document.likes);
                 }
 
 
