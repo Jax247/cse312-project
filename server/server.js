@@ -78,8 +78,8 @@ let allUsers = new Map();
 let tokenUsers = new Map();
 
 
-//var url = "mongodb://localhost:27017/";
-var url = 'mongodb://mongo:27017';
+var url = "mongodb://localhost:27017/";
+//var url = 'mongodb://mongo:27017';
 
 MongoClient.connect(url, function (err, db) {
     if (err) throw err;
@@ -140,7 +140,8 @@ net.createServer(function (socket) {
                 const requestType = requestParts[0];
                 const requestPath = requestParts[1];
                 const HTTPVer = requestParts[2];
-                const port = lines[1].split(':')[2];
+                //const port = lines[1].split(':')[2];
+                const port = 0;
                 if (checkForToken(lines)) {
                     if (requestType === "GET") {
                         paths(requestPath, socket, port, lines);
@@ -257,6 +258,7 @@ function sendCookie(username, socket) {
     let content = fs.readFileSync('./index.html');
     let cookie = "HTTP/1.1 301 OK\r\n" +
         //TODO: NEED TO FIX
+        "Content-Length: 0 \r\n" +
         "Location: /\r\n" +
         "Set-Cookie: sessionToken=" + token + "; SameSite=Strict\r\n" +
         "Set-Cookie: yourName=" + username + "; SameSite=Strict\r\n\r\n";
