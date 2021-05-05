@@ -78,8 +78,8 @@ let allUsers = new Map();
 let tokenUsers = new Map();
 
 
-var url = "mongodb://localhost:27017/";
-//var url = 'mongodb://mongo:27017';
+//var url = "mongodb://localhost:27017/";
+var url = 'mongodb://mongo:27017';
 
 MongoClient.connect(url, function (err, db) {
     if (err) throw err;
@@ -91,46 +91,30 @@ MongoClient.connect(url, function (err, db) {
 importFromMongo()
 
 
-fs.readdirSync('./User_Uploads').forEach(upload => {
-    fs.unlinkSync('./User_Uploads/' + upload);
-});
+// fs.readdirSync('./User_Uploads').forEach(upload => {
+//     fs.unlinkSync('./User_Uploads/' + upload);
+// });
 
 net.createServer(function (socket) {
-
     let waitingForContent = false;
     let extendedBuffer;
     let lines;
     let tempHeaders;
     let contentLength;
-
     socket.on('end', function (list) {
-
-        //console.log("SOCKET end");
     });
     socket.on("error", function (list) {
-        //console.log("SOCKET ERROR");
     });
-
     socket.on('close', function (list) {
         //Go thru tokenList and delete pair with matching Socket
         if (socket.remoteAddress) {
-            //console.log("USER LEFT:");
-            //console.log(socket.remoteAddress);
-            //console.log(socket.remotePort);
             upgradedUsers.delete(socket.remoteAddress + socket.remotePort.toString());
             sendActiveUsers();
         } else {
-            //console.log("SOCKET UNDEFINED");
         }
     });
 
-
     socket.on("data", function (data) {
-        //console.log("ACTIVE USERS: " + upgradedUsers.size)
-        ////console.log("CLIENT PORT: " + socket.remotePort);
-        ////console.log("NEW STUFF");
-        ////console.log(data.toString());
-        ////console.log("WAITING FOR CONTENT: ", waitingForContent);
         if (!waitingForContent) {
             //lines = data.toString().split("\r\n");
             var indexOfContent = data.indexOf('\r\n\r\n');
@@ -150,23 +134,14 @@ net.createServer(function (socket) {
 
         if (!waitingForContent) {
             if (upgradedUsers.has(socket.remoteAddress + socket.remotePort.toString())) {
-                ////console.log(data.toString());
-                ////console.log("CONSOLE IS UPGRADED: " + data.length);
                 handleAsWebsocket(socket, data);
             } else {
                 const requestParts = lines[0].split(" ");
                 const requestType = requestParts[0];
                 const requestPath = requestParts[1];
                 const HTTPVer = requestParts[2];
-
                 const port = lines[1].split(':')[2];
-
                 if (checkForToken(lines)) {
-                    ////console.log("FOUND COOKIE");
-                    ////console.log(lines)
-                    ////console.log("REGULAR CLIENT");
-
-
                     if (requestType === "GET") {
                         paths(requestPath, socket, port, lines);
                     }
@@ -177,17 +152,14 @@ net.createServer(function (socket) {
                     extendedBuffer = [];
                     tempHeaders = [];
                 } else {
-                    ////console.log(lines);
-                    ////console.log("SHOULD BE HERE");
                     console.log(requestPath)
                     notLoggedInHandler(requestPath, socket, port, lines, extendedBuffer);
-                    //socket.write(buildHtmlResponse('./login.html', []));
                 }
             }
         }
     });
 
-}).listen({host: "0.0.0.0", port: 8000});
+}).listen({host: "0.0.0.0", port: 80});
 
 
 //function paths(check, socket, port, lines) {
@@ -199,108 +171,97 @@ function notLoggedInHandler(path, socket, port, lines, data) {
         tempPath = path;
         path = 'other';
     }
-
     let response;
     switch (path) {
         case '/registerNewAccount':
             var formAsList = handleMultiPart(data, lines);
-            var userFound = usernameExists(formAsList[0].content.toString());
-            ////console.log("USERFOUND: " + userFound);
-            if (!userFound) {
-                ////console.log("CREATING ACCOUNT");
-                //loggedInUsers.set(socket.remoteAddress.toString() + socket.remotePort.toString(), "GARBAGE");
-                ////console.log("USERNAME DOESNT EXIST");
-                //temporary
-                let userName = formAsList[0].content.toString();
-                let password = formAsList[1].content.toString();
-                //Still need to add check of user and password leng for now good
-                //let currUser = sendCookie(userName, socket);
-                createUserInDB(formAsList[0].content.toString(), formAsList[1].content.toString(), socket);
-                //Send cookie which adds their session token
-                //response = buildHtmlResponse('./Authentication/Registration/Register.html', []);
-                return;
+            if (formAsList.length === 2) {
+                // isValidUsernameAndPassword
+                var userFound = usernameExists(formAsList[0].content.toString());
+                if (!userFound) {
+                    let userName = formAsList[0].content.toString().replace(/&/g, '&amp;')
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;");
+                    let password = formAsList[1].content.toString().replace(/&/g, '&amp;')
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;");
+                    createUserInDB(userName, password, socket);
+                    return;
+                }
             }
             break
         case '/register?':
             console.log("SENDING REGISTER");
             response = buildHtmlResponse('./Authentication/Registration/Register.html', []);
             break;
-
         case '/loginForm':
             console.log("LOGIN");
-            var formAsList = handleMultiPart(data, lines);
-            let userName = formAsList[0].content.toString();
-            let password = formAsList[1].content.toString();
-
             let valid = false;
-            if (allUsers.has(userName)) {
-                bcrypt.compare(password, allUsers.get(userName).password, function (err, result) {
-                    if (result) {
-                        console.log("WE GOOD");
-                        sendCookie(userName, socket);
-                        valid = true;
-                        return true;
-                    } else {
-                        buildRedirect('/login', 8000)
-                        console.log("WE NOT GOOD");
-                    }
-                });
+            var formAsList = handleMultiPart(data, lines);
+            if (formAsList[0] && formAsList[1]) {
+                let userName = formAsList[0].content.toString().replace(/&/g, '&amp;')
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+                let password = formAsList[1].content.toString().replace(/&/g, '&amp;')
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+                if (allUsers.has(userName)) {
+                    console.log("CHECKING");
+                    bcrypt.compare(password, allUsers.get(userName).password, function (err, result) {
+                        if (result) {
+                            console.log("WE GOOD");
+                            sendCookie(userName, socket);
+                            valid = true;
+                            return true;
+                        } else {
+                            response = buildHtmlResponse('./Authentication/Login/login.html', [['{{loginNote}}', '<p> Invalid username/password </p>\r\n']]);
+                            socket.write(response);
+                            console.log("WE NOT GOOD");
+                            return false;
+                        }
+                    });
+                } else {
+                    socket.write(buildHtmlResponse('./Authentication/Login/login.html', [['{{loginNote}}', '']]));
+                }
+            } else {
+                socket.write(buildHtmlResponse('./Authentication/Login/login.html', [['{{loginNote}}', '']]));
             }
-            console.log(valid);
-
-
-            //
-            // if (validateCreds(userName, password)) {
-            //     sendCookie(userName, socket);
-            //
-            // } else {
-            //     console.log("WRONG PASS");
+            //socket.write(buildHtmlResponse('./Authentication/Login/login.html', []));
+            // if (!valid) {
+            //     console.log("VALID:")
+            // socket.write(buildHtmlResponse('./Authentication/Login/login.html', []));
             // }
-            break;
-
+            return;
         case 'other':
             paths(tempPath, socket, port, lines);
             console.log("IS OTHER");
             return;
         default:
-            response = buildHtmlResponse('./Authentication/Login/login.html', []);
+            console.log("IS DEFAULT");
+            response = buildHtmlResponse('./Authentication/Login/login.html', [['{{loginNote}}', '']]);
     }
     if (response) {
+        console.log("RESPONSE: ");
         socket.write(response);
 
     }
 }
 
 function sendCookie(username, socket) {
-
-    //Create Random Cookie
     let token = Math.random().toString(36).substr(3, 8) +
         Math.random().toString(36).substr(2, 20) +
         Math.random().toString(36).substr(3, 9);
-
-    //needs to be beefed up or could work?
     if (allUsers.has(username)) {
         tokenUsers.set(token, allUsers.get(username));
-        //console.log("RETURNING USER");
     }
-    // } else {
-    //     //console.log("NEW USERS");
-    //     let newUser = new User(username, token, socket, []);
-    //     allUsers.set(username, newUser)
-    //     tokenUsers.set(token, newUser);
-    //
-    // }
-
     let content = fs.readFileSync('./index.html');
     let cookie = "HTTP/1.1 301 OK\r\n" +
         //TODO: NEED TO FIX
-        "Location: http://localhost:" + socket.localPort + "\r\n" +
-        "Set-Cookie: sessionToken=" + token + "\r\n\r\n";
-
+        "Location: /\r\n" +
+        "Set-Cookie: sessionToken=" + token + "; SameSite=Strict\r\n" +
+        "Set-Cookie: yourName=" + username + "; SameSite=Strict\r\n\r\n";
     socket.write(cookie);
-
     return allUsers.get(username);
-
 }
 
 function sendActiveUsers() {
@@ -309,19 +270,17 @@ function sendActiveUsers() {
         users.push(values.userId)
     })
     let sendMsg = JSON.stringify({activeUsers: upgradedUsers.size, userId: users})
-
     for (let [ipPort, user] of upgradedUsers) {
-        ////console.log("SENDING", sendMsg);
         user.socket.write(createWebsocketFrame(new Message(sendMsg, 'text')));
 
     }
 }
 
-
 function checkForToken(lines) {
     //console.log("CHECKING FOR COOKEI");
     let cookies = getHeaderInfo('Cookie:', lines);
     ////console.log(getValueFromHeader('sessionToken=', cookies));
+    console.log("FUCKED: " + getValueFromHeader('sessionToken=', cookies))
     return tokenUsers.has(getValueFromHeader('sessionToken=', cookies));
 }
 
@@ -330,8 +289,6 @@ function usernameExists(username) {
 }
 
 function createUserInDB(username, password, socket) {
-
-
     const saltRounds = 10;
     let hashedPassword;
     bcrypt.genSalt(saltRounds, function (err, salt) {
@@ -352,60 +309,35 @@ function createUserInDB(username, password, socket) {
                     db.close();
                 });
             });
-            allUsers.set(username, new User(username, "", null, 0,  hashedPassword));
+            allUsers.set(username, new User(username, "", null, 0, hashedPassword));
             sendCookie(username, socket);
 
         });
     });
 }
 
-
-// ////console.log("USER: " + user.chats);
-// MongoClient.connect(url, function (err, db) {
-//     if (err) throw err;
-//     var dbo = db.db("mydb");
-//
-//     var user = {username: username, password: password, chats: "", posts: "", hasProfilePic: false};
-//     dbo.collection("users").insertOne(user, function (err, res) {
-//         if (err) throw err;
-//         ////console.log("1 document inserted");
-//         db.close();
-//     });
-// });
-
-
 function createWebsocketFrame(message) {
     let type = message.contentType
     let messageData = message.data;
-
     let finOpp = 129;
-
     if (type === 'image') {
         finOpp = 130;
     }
     let payloadLeng = messageData.length;
-    ////console.log("DECODED LENG: " + messageData.length);
-
     let send = new Buffer(Buffer.from([finOpp]));
     if (payloadLeng >= 126 && payloadLeng < 65536) {
         ////console.log("SHOULD CHANGE FRAME");
         send = new Buffer.concat([send, Buffer.from([126])]);
         let byte1 = 0xff & (payloadLeng >> 8);
         let byte2 = 0xff & payloadLeng;
-        ////console.log("BUILD LENG: " + byte1.toString(2) + "_" + byte2.toString(2));
         send = new Buffer.concat([send, Buffer.from([byte1, byte2])]);
 
     } else {
-        ////console.log("SMALL MESSAGE");
         send = new Buffer.concat([send, Buffer.from([payloadLeng])]);
     }
-    ////console.log("OUT OF IF");
-    ////console.log(Buffer.from(messageData, 'binary'));
     send = Buffer.concat([send, Buffer.from(messageData, 'binary')]);
-    //console.log("SEND: " + message.data.toString());
-    ////console.log("SEND LENG: " + send.length);
-    return send;
 
+    return send;
 }
 
 function handleAsWebsocket(socket, data) {
@@ -414,42 +346,30 @@ function handleAsWebsocket(socket, data) {
     var maskBit = (data[1] & 128);
     var maskIdx = 0;
     var senderSocket = socket;
-    ////console.log("FINBIT: " + (data[0] & 256));
-    ////console.log(data.length);
-
     var leng = (data[1] & 127);
     let extendedLeng;
     let isImage = false;
     if ((opp !== 1 || opp !== 2) && data.length > 10) {
-
         if (opp !== 1) {
             isImage = true;
         }
-
         if (leng === 126) {
             extendedLeng = ((data[2]) + (data[3])) & 0xffff;
-            ////console.log("EXTEND: " + data[2].toString(2) + "_" + data[3].toString(2));
             let add1 = Buffer.from([data[2]]);
             let add2 = Buffer.from([data[3]]);
 
             var temp = Buffer.concat([add1, add2]);
-            ////console.log("TEMP: : " + temp.readInt16LE(0).toString(16));
-            //leng = parseInt(extendedLeng);
-            ////console.log("LENG: " + leng);
-            ////console.log("LENG: " + parseInt(extendedLeng));
+
             maskIdx += 2;
         } else if (leng === 127) {
-            ////console.log("WE GOETTEM ");
         }
 
-        ////console.log("MASK BIT: " + maskBit);
         var MASK = [data[2 + maskIdx], data[maskIdx + 3], data[maskIdx + 4], data[maskIdx + 5]];
 
         var DECODED = "";
         for (let i = 6 + maskIdx; i < data.length; i++) {
             DECODED += String.fromCharCode(MASK[(i - 6 - maskIdx) % 4] ^ data[i]);
         }
-        ////console.log(DECODED.length);
         let sendFrame;
         let frameType;
         let message;
@@ -470,25 +390,14 @@ function handleAsWebsocket(socket, data) {
                 DECODED = pOut
             } else if (tokenUsers.has(jTemp['sessionToken'])) {
                 frameType = 'post';
-
                 currUserToken = jTemp['sessionToken'];
-
-
-                //DECODED = DECODED.substr(0, DECODED.length - 1);
                 var idNum = messageHistory.length;
-
                 jTemp["id"] = idNum;
                 jTemp["likeCount"] = 0;
                 jTemp["userID"] = tokenUsers.get(currUserToken).username
-
                 jTemp["hasProfilePic"] = tokenUsers.get(currUserToken).hasProfilePic;
                 delete jTemp['sessionToken'];
-
                 DECODED = jTemp;
-                //console.log(DECODED);
-                //likeOrDisLike()
-
-                //handle Direct message seperate
             } else if (jTemp.dm === true) {
                 frameType = 'dm';
 
@@ -505,9 +414,6 @@ function handleAsWebsocket(socket, data) {
 
                     sendActiveUsers();
                     let currUser = tokenUsers.get(jTemp.dmnotify).username
-                    //allUsers.get(currUser).socket = socket;
-                    //let jHasProfilePic = JSON;
-                    //JSON.stringify({whoHasPic: true});
                     let profilePicUsers = [];
                     if (allUsers.get(currUser).hasProfilePic) {
                         profilePicUsers.push(currUser);
@@ -524,7 +430,7 @@ function handleAsWebsocket(socket, data) {
                     socket.write(createWebsocketFrame(new Message(jHasProfilePic, frameType, "", "", "")));
                     //("USER TO RECV: " + jTemp.userRecvid);
                     if (allUsers.get(currUser).chats.has(jTemp.userRecvid)) {
-                        ////console.log("SHOULD SEND MESSAGE");
+                        console.log("SHOULD SEND MESSAGE");
                         let messages = allUsers.get(currUser).chats.get(jTemp.userRecvid);
                         messages.forEach(message =>
                             socket.write(createWebsocketFrame(new Message(message, frameType))));
@@ -828,7 +734,7 @@ function importFromMongo() {
                 let newUser = new User(document.username, "", null, document.likes, document.password);
                 newUser.hasProfilePic = document.hasProfilePic;
                 if (document.chats !== "" && document.chats) {
-                    //console.log("SETTING");
+                    console.log("SETTING");
                     console.log((document.chats));
                     newUser.setChats(jsonToMap(JSON.parse(document.chats)));
                 }
@@ -838,6 +744,7 @@ function importFromMongo() {
 
 
                 allUsers.set(document.username, newUser);
+                console.log("ALL USERS: ", allUsers);
             }
             db.close();
         });
@@ -856,13 +763,8 @@ function importFromMongo() {
 }
 
 function jsonToMap(tooDarr) {
-
     let resMap = new Map();
-
-    for (let arr in tooDarr) {
-        resMap.set(arr[0], arr[1]);
-    }
-
+    tooDarr.forEach(arr => resMap.set(arr[0], arr[1]));
     return resMap;
 }
 
@@ -914,20 +816,35 @@ function getHeaderInfo(desiredLine, lines) {
 }
 
 function getValueFromHeader(desired, line) {
-    let value = "";
-    let indexOfDesired = line.indexOf(desired) + desired.length;
-    let end = desired.indexOf(';', indexOfDesired);
-    if (end < line.length && end > -1) {
+    // let value = "";
+    // let indexOfDesired = line.indexOf(desired) + desired.length;
+    // let end = desired.indexOf(';', indexOfDesired);
+    //
+    //
+    // if (end < line.length && end > -1) {
+    //     end = desired.indexOf(';', indexOfDesired);
+    // } else {
+    //     end = line.length - 1;
+    // }
+    // ////console.log("START", indexOfDesired);
+    // ////console.log("END:", end);
 
-
-        end = desired.indexOf(';', indexOfDesired);
-    } else {
-        end = line.length - 1;
+    var name = desired;
+    var decodedCookie = line;
+    var ca = decodedCookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) === ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) === 0) {
+            return c.substring(name.length, c.length);
+        }
     }
-    ////console.log("START", indexOfDesired);
-    ////console.log("END:", end);
+    return "";
 
-    return line.substr(indexOfDesired, end);
+
+    //return line.substr(indexOfDesired, end);
 }
 
 function parseFormBoundary(content, boundary) {
@@ -996,7 +913,6 @@ function postRequest(data, lines, requestPath, socket, port) {
         userId = requestPath.substr(requestPath.length);
     }
 
-
     let formAsList = handleMultiPart(data, lines);
     switch (requestPath) {
         case "/image-upload":
@@ -1005,36 +921,21 @@ function postRequest(data, lines, requestPath, socket, port) {
             //Only allows for jpeg upload
             if (formAsList.length > 0 && formAsList[0] && formAsList[1] &&
                 (formAsList[0].contentType.toString().includes('image/jpg') || formAsList[0].contentType.toString().includes('image/jpeg'))) {
-
-
-                ////console.log("REACHED IMAGE UPLOAD:  ", formAsList[1].contentType);
-
-
                 let nameOfImage = formAsList[0].contentDisposition.substr(formAsList[0].contentDisposition.indexOf("filename=") + fileName.length).replace(/"/g, "");
                 let contentType = formAsList[0].contentType;
                 ////console.log("PRINTING CONTENT:  ", formAsList[0].contentType);
                 fs.writeFile('./User_Uploads/' + nameOfImage, formAsList[0].content, function (error) {
                     if (error) return //console.log(error);
                 });
-
                 let newUpload = new Upload('./User_Uploads/' + nameOfImage, formAsList[1].content.toString()
                     .replace(/&/g, '&amp;')
                     .replace(/</g, "&lt;")
                     .replace(/>/g, "&gt;"), contentType);
-
-
                 userUploads.push(newUpload);
-
-                //if(userUploads.includes())
-
-
-                ////console.log("ADDED ANOTHER IMAGE :  SIZE: ", userUploads.length);
             }
             response = buildRedirect(redirects.get('/image-upload'), port);
             break;
         case "/comment":
-            //10 = length of boundary=
-            // Trim string and change <,>,& for protection
             let name = formAsList[0].content.toString();
             let comment = formAsList[1].content.toString();
             if (name && comment) {
@@ -1045,25 +946,14 @@ function postRequest(data, lines, requestPath, socket, port) {
                     .replace(/>/g, "&gt;");
                 namesAndComments.push(nameComment.trim());
             }
-
             response = buildRedirect(redirects.get('/comment'), port);
-
             break;
         case '/registerNewAccount':
-
             response = buildRedirect('/', port);
             break;
         case '/conversation':
-            //console.log("SENDING CHAT RENDER");
-            //console.log(getHeaderInfo("Cookie:", lines))
             let cookie = getValueFromHeader('sessionToken=', getHeaderInfo("Cookie:", lines));
-            //console.log("COOKE");
-            //console.log(cookie);
             if (tokenUsers.has(cookie)) {
-                //console.log(tokenUsers.get(cookie));
-
-                // response = buildRedirect('/', port);
-
                 response = buildHtmlResponse('./chatRender.html', []);
 
 
@@ -1074,12 +964,8 @@ function postRequest(data, lines, requestPath, socket, port) {
             //Only allows for jpeg upload
             if (formAsList.length > 0 && formAsList[0] &&
                 (formAsList[0].contentType.toString().includes('image/jpg') || formAsList[0].contentType.toString().includes('image/jpeg'))) {
-
-
-                ////console.log("REACHED IMAGE UPLOAD:  ", formAsList[1].contentType);
                 let token = getValueFromHeader("sessionToken=", getHeaderInfo("Cookie:", lines));
                 let username = tokenUsers.get(token).username;
-
                 let updatedUser = new User();
                 updatedUser = tokenUsers.get(token);
                 updatedUser.hasProfilePic = true;
@@ -1092,22 +978,12 @@ function postRequest(data, lines, requestPath, socket, port) {
                 console.log("SHOULD BE TRUE: " + tokenUsers.get(token).hasProfilePic);
                 updateProfilePic(username);
                 let contentType = formAsList[0].contentType;
-
-                ////console.log("PRINTING CONTENT:  ", formAsList[0].contentType);
                 fs.writeFile('./pictureProfiles/' + username + '.jpg', formAsList[0].content, function (error) {
                     if (error) return //console.log(error);
                 });
-
-
-                //if(userUploads.includes())
-
-
-                ////console.log("ADDED ANOTHER IMAGE :  SIZE: ", userUploads.length);
-                response = buildRedirect('/profile/' + username, port);
+                response = buildRedirect('profile/' + username, port);
             }
-
             break;
-
     }
     if (response) {
         socket.write(response);
@@ -1120,15 +996,10 @@ function updateProfilePic(ownerId) {
     MongoClient.connect(url, function (err, db) {
         if (err) throw err;
         var dbo = db.db("mydb");
-
         var userQuery = {username: ownerId};
-
         let postQuery = {userID: ownerId}
-
         let postReplace = {$set: {hasProfilePic: true}};
         let userReplace = {$set: {hasProfilePic: true}}
-
-
         dbo.collection("users").updateOne(userQuery, userReplace, function (err, res) {
             if (err) throw err;
             //console.log("1 document updated");
@@ -1145,7 +1016,6 @@ function updateProfilePic(ownerId) {
 }
 
 function paths(check, socket, port, lines) {
-    console.log("CHECK: " + check);
     let builtContent;
     let expr = "false";
     let contentType;
@@ -1156,8 +1026,6 @@ function paths(check, socket, port, lines) {
 
     } else if (check.startsWith('/profile')) {
         expr = '/profile';
-
-
     } else if (check.includes("images?")) {
         let images = check.split("images=")[1].split('+');
         let name = check.split("name=")[1];
@@ -1171,8 +1039,6 @@ function paths(check, socket, port, lines) {
         check = '/images'
         builtContent = buildImageResponse(name, images);
     } else if (check.includes("/image") || check.includes("/User_Uploads") || check.includes('/pictureProfiles/') && check !== "/image") {
-        console.log("HAS CONVERSATION:" + check);
-
         if (check.startsWith('/conversation')) {
             check = check.replace('/conversation', "");
         }
@@ -1189,8 +1055,6 @@ function paths(check, socket, port, lines) {
             console.error(err)
         }
     }
-
-    //console.log(expr);
     let response;
     switch (expr) {
         case "built":
@@ -1201,13 +1065,11 @@ function paths(check, socket, port, lines) {
             response = buildBinaryResponse('.' + check, content.get(expr)[1],
                 content.get(expr)[2], content.get(expr)[3]);
             break;
-
         case "content":
             // 0 File destination,1 content type,2 boolean of file or not,3 file type
             response = buildResponseOK(content.get(check)[0], content.get(check)[1],
                 content.get(check)[2], content.get(check)[3]);
             break;
-
         case "redirect":
             response = buildRedirect(redirects.get(check), port)
             break;
@@ -1218,21 +1080,14 @@ function paths(check, socket, port, lines) {
         case '/websocketDM':
         case "/websocket":
             response = createHandshake(socket, lines);
-            //console.log("INIT WEB SOCK");
             upgradedUsers.set(socket.remoteAddress + socket.remotePort.toString(), new Client(socket.remoteAddress, socket.remotePort, expr, socket));
-            //console.log(messageHistory);
-            ////console.log(messageHistory.length);
+
             if (expr !== '/websocketDM') {
                 for (let i = 0; i < messageHistory.length; i++) {
-                    //console.log("SENDING: " + messageHistory[i]);
-                    //message history really post history
                     socket.write(createWebsocketFrame(messageHistory[i]));
                 }
             }
-
-
             return;
-
         case '/profile':
             //console.log("SENDING PROFILE");
             console.log("REAChED");
@@ -1252,9 +1107,6 @@ function paths(check, socket, port, lines) {
             response = buildDefaultResponse();
             break;
     }
-    ////console.log(response);
-    //console.log("SENDING RESPONSE");
-    //sole.log(response.length);
     socket.write(response);
 }
 
@@ -1284,8 +1136,6 @@ function sendProfile(path, token) {
         imageSrc = '"/pictureProfiles/' + user.username + '.jpg"';
     }
     content = content.replace('{{profilePic}', '<img id="profilePicture" src=' + imageSrc + ' alt="default.jpg"/>\r\n');
-
-
     let usernameRender = "<p>" + user.username + "</p>";
     let postIds = "";
     let post;
@@ -1294,11 +1144,8 @@ function sendProfile(path, token) {
         let jPost = JSON.parse(messageHistory[parseInt(post)].data);
         postIds += '<p>' + jPost.comment + '</p> \r\n\r\n'
     }
-
     content = content.replace('{{username}}', usernameRender)
         .replace('{{post}}', postIds);
-
-
     return "HTTP/1.1 200 OK\r\n" +
         "Content-Type: text/html\r\n" +
         "Content-Length: " + content.length + "\r\n\r\n" +
@@ -1307,10 +1154,8 @@ function sendProfile(path, token) {
 
 }
 
-
 function createHandshake(socket, lines) {
     const sha1 = crypto.createHash('sha1')
-    //console.log("HANDSHAKE");
     let clientKey = getHeaderInfo('Sec-WebSocket-Key:', lines) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     sha1.update(clientKey);
     let response =
@@ -1319,15 +1164,13 @@ function createHandshake(socket, lines) {
         'Upgrade: websocket\r\n' +
         'Sec-WebSocket-Accept: ' + sha1.digest('base64') + '\r\n\r\n';
     socket.write(response);
-
     return response;
 }
 
 function buildRedirect(redirect, port) {
     let response = "HTTP/1.1 301 Moved Permanently\r\n"
     //response += "Content-Length: 0\r\n\r\n";
-    response += "Location: http://localhost:" + port + redirect + "\r\n\r\n";
-
+    response += "Location: /"  + redirect + "\r\n\r\n";
     return response
 }
 
@@ -1337,7 +1180,6 @@ function buildBinaryResponse(content, mimeType, isFile, decode) {
         "HTTP/1.1 200 OK\r\n" +
         "Content-Type: " + mimeType + "\r\n" +
         "Content-Length: " + display.length + "\r\n\r\n";
-
     const responseBuffer = Buffer.from(response, 'utf8')
     return Buffer.concat([responseBuffer, display]);
 
@@ -1358,27 +1200,19 @@ function buildResponseOK(content, mimeType, isFile, decode) {
     return response;
 }
 
-
 //Pass in a 2d array each inner array should be the string
 //to replace in the html file the other and array of the
 // content you want to append in html form already
 function buildHtmlResponse(path, replace) {
-    let content = fs.readFileSync(path);
-    content = content.toString();
-
-    // html String 0 is the string to replace
-    // htmlString 1 is the html to append
+    let content = fs.readFileSync(path).toString();
     replace.forEach(htmlString =>
-        content.replace(htmlString[0], htmlString[1])
+        content = content.replace(htmlString[0], htmlString[1])
     );
-
-
     return "HTTP/1.1 200 OK\r\n" +
         "Content-Type: text/html\r\n" +
         "Content-Length: " + content.length + "\r\n\r\n" +
         content;
 }
-
 
 function buildDefaultResponse() {
     let content = fs.readFileSync('./index.html');
@@ -1386,7 +1220,6 @@ function buildDefaultResponse() {
     namesAndComments.forEach(nameNcomment => {
         listOfNames += "<p> " + nameNcomment + "</p>\r\n";
     });
-
     let listOfImages = "";
     userUploads.forEach(upload => {
 
@@ -1394,7 +1227,6 @@ function buildDefaultResponse() {
             '<p>' + upload.caption + '</p> \r\n' +
             '<img src="' + upload.imageName + '"' + ' class="my_image"/> \r\n';
     });
-
     content = content.toString()
         .replace('{{names}}', listOfNames)
         .replace('{{images}}', listOfImages);
@@ -1403,7 +1235,6 @@ function buildDefaultResponse() {
         "Content-Length: " + content.length + "\r\n\r\n" +
         content;
 }
-
 
 function buildResponseNotFound(content) {
     let response =
@@ -1414,7 +1245,6 @@ function buildResponseNotFound(content) {
     ////console.log("RESPONSE: " + response)
     return response;
 }
-
 
 function buildImageResponse(name, imageList) {
     var temp = "";

@@ -128,15 +128,32 @@ function getCookie(cname) {
 }
 
 
+
+function createConvoButton(name) {
+
+    let button = document.createElement('button');
+    button.id = 'goToProfileButton';
+    button.innerHTML = 'Go to profile';
+
+    button.addEventListener('click', function () {
+        location.href = window.location.href + 'profile/' + name;
+    })
+
+    return button;
+}
+
+
 let socket;
 let token;
+let userName;
 
 function startWebsocket() {
     console.log("STARTING SOCKET");
     token = getCookie("sessionToken");
-
+    userName = getCookie("yourName");
     socket = new WebSocket('ws://' + window.location.host + '/websocket');
 
+    document.getElementById('createContainer').appendChild(createConvoButton(userName))
 
     socket.onopen = function (event) {
         socket.send(JSON.stringify({'notify': token }));

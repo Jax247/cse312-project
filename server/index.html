@@ -38,20 +38,20 @@
       <div class="column mid">
         <!-- Create a post -->
         <p>Create Post</p>
-        <div class="head">
+        <div id= "createContainer" class="head">
           <!-- Posts -->
-          <label for="chat-name">Name: </label>
-          <input id="chat-name" type="text" name="name" />
+<!--          <label for="chat-name">Post Title: </label>-->
+          <input id="chat-name" placeholder="Post Title..." type="text" name="name" />
           <br />
-          <!-- <label for="chat-comment">Comment: </label> -->
+<!--          <label for="chat-comment">Post Description: </label>-->
           <input
             id="chat-comment"
-            placeholder="Create Post..."
+            placeholder="Post Description..."
             type="text"
             name="comment"
           />
 
-          <button onclick="sendMessage()">Chat</button>
+          <button onclick="sendMessage()">Create Post</button>
         </div>
         <!-- Posts Feed -->
 
@@ -59,36 +59,8 @@
 
         {{names}}
 
-        <form
-          action="/comment"
-          id="comment-form"
-          method="post"
-          enctype="multipart/form-data"
-        >
-          <label for="text-form-name">Name: </label>
-          <input id="text-form-name" type="text" name="name" /><br />
-          <label for="form-comment">Comment: </label>
-          <input id="form-comment" type="text" name="comment" />
-          <input type="submit" value="Submit" />
-        </form>
-
-        <form action="/image-upload" id="image-form" method="post" enctype="multipart/form-data">
-          <label for="form-file">Image: </label>
-          <input id="form-file" type="file" name="upload" />
-          <br />
-          <label for="image-form-name">Caption: </label>
-          <input id="image-form-name" type="text" name="name" />
-          <input type="submit" value="Submit" />
-        </form>
-
-        <input type="file" id="filename" />
-        <br />
-        <input type="button" value="Upload" onclick="sendFile()" />
 
         {{images}}
-
-        <h2>File Upload</h2>
-
 
             <div class="line">
                 <div id="chat">
