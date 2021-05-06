@@ -33,7 +33,10 @@ function updateLike(like) {
 //Use createConvo button to create the button
 // that will link users to the chat screen
 function renderActiveUsers(listOfUsers) {
+    // Render list of incoming usernames in a ul tag
+    console.log(listOfUsers);
 
+    // cannot do until issue with db is resolved
 }
 
 
@@ -50,7 +53,7 @@ function addMessage(message) {
         contentContainer.id = "messsage" + chatMessage['id'];
         let cardHead = document.createElement('div');
         cardHead.className = "card-header";
-        cardHead.innerHTML = chatMessage['username'] + " Posted!";
+        cardHead.innerHTML = chatMessage['username'] + " Posted!"; //not username but title
         contentContainer.appendChild(cardHead);
         let cardBody = document.createElement('div');
         cardBody.className = "card-body";
@@ -85,7 +88,9 @@ function addMessage(message) {
         if (chatMessage['hasProfilePic']) {
             profilePicSrc = '"pictureProfiles/' + chatMessage['userID'] + '.jpg"';
         }
-        contentContainer.innerHTML += '<img id="profilePic" src=' + profilePicSrc + '>';
+        
+
+        contentContainer.innerHTML += '<img id="profilePic" class="pfp" src=' + profilePicSrc + '>';
 
         contentContainer.appendChild(cardBody);
         cardBody.appendChild(like);

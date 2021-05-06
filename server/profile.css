@@ -1,0 +1,116 @@
+body {
+  background: #373b44; /*fallback for old browsers*/
+  background: rgb(2, 0, 36);
+  background: linear-gradient(
+    250deg,
+    rgba(2, 0, 36, 1) 0%,
+    rgba(0, 70, 255, 1) 15%,
+    rgba(33, 143, 166, 1) 100%
+  );
+  padding: 45px;
+}
+
+.profilepic {
+  height: 200px;
+  width: 200px;
+  border-radius: 50%;
+}
+
+.postcard {
+  width: 50%;
+  color: #000;
+  margin-left: 25%;
+}
+
+.raised {
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+.header {
+  /* background-color: aliceblue; */
+  margin-bottom: 30px;
+  height: 210px;
+  width: 210px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+}
+
+.wrapper {
+  max-width: 85em;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 2em;
+  opacity: 1;
+  filter: none;
+  -moz-transition: opacity 1s ease, -moz-filter 1s ease;
+  -webkit-transition: opacity 1s ease, -webkit-filter 1s ease;
+  -ms-transition: opacity 1s ease, -ms-filter 1s ease;
+  transition: opacity 1s ease, filter 1s ease;
+}
+
+body {
+  font-family: "Poppins", sans-serif;
+  height: 100vh;
+  /* overflow: scroll; */
+}
+
+.info {
+  /* position: absolute;
+    left: 50%; */
+}
+
+#outer-circle {
+  background: #385a94;
+  border-radius: 50%;
+  height: 210px;
+  width: 210px;
+  position: relative;
+  bottom: 20%;
+  /* 
+     Child elements with absolute positioning will be 
+     positioned relative to this div 
+    */
+}
+
+#inner-circle {
+  position: absolute;
+  border-radius: 50%;
+  height: 200px;
+  width: 200px;
+  /*
+     Put top edge and left edge in the center
+    */
+  top: 50%;
+  left: 50%;
+  /* margin: -150px 0px 0px -150px; */
+  /* 
+     Offset the position correctly with
+     minus half of the width and minus half of the height 
+    */
+}
+#header {
+  padding: 6em 0 4em 0;
+  text-align: center;
+  height: 100%;
+}
+
+#header .avatar {
+  border-radius: 100%;
+  display: inline-block;
+  margin: 0 0 2em 0;
+  padding: 0.5em;
+  border: solid 1px rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.075);
+}
+.main {
+  width: 100%;
+  align-items: center;
+  overflow: auto;
+  overflow-y: auto;
+}
+#header .avatar img {
+  border-radius: 100%;
+  display: block;
+  width: 10em;
+}
