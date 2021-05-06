@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <script src="function.js"></script>
+    <script src="profileFunctions.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
     <link rel="stylesheet" href="profile.css">
     <link rel="stylesheet" href="hi.css">
@@ -16,7 +16,7 @@
     <header id="header">
         <div class="info">
             <span id="avatar" class="avatar"></span>
-            <h1>{{username}}</h1>
+            <h1> {{username}} </h1>
         </div>
       <br/>
     </header>
@@ -27,9 +27,9 @@
       <div class="raised card bg-light mb-3 postcard">
           <div class="card-header">
               {{profilePic}}
-              <span>{{username}} has Posted!</span>
+              <span> {{username}} has posted!</span>
               </div>
-          <div class="card-body">{{Post}}</div>
+          <div class="card-body">{{post}}</div>
           <div class="card-footer">
             <i href="javascript:void(0)" class="d-inline-block text-muted fas fa-cloud">
               <small class="align-middle">
@@ -41,9 +41,9 @@
         <div class="raised card bg-light mb-3 postcard">
             <div class="card-header">
                 {{profilePic}}
-                <span>{{username}} has Posted!</span>
+                <span>{{username}} has posted!</span>
                 </div>
-            <div class="card-body">{{Post}}</div>
+            <div class="card-body">{{post}}</div>
             <div class="card-footer">
               <i href="javascript:void(0)" class="d-inline-block text-muted fas fa-cloud">
                 <small class="align-middle">
@@ -55,9 +55,9 @@
           <div class="raised card bg-light mb-3 postcard">
             <div class="card-header">
                 {{profilePic}}
-                <span>{{username}} has Posted!</span>
+                <span>{{username}} has posted!</span>
                 </div>
-            <div class="card-body">{{Post}}</div>
+            <div class="card-body">{{post}}</div>
             <div class="card-footer">
               <i href="javascript:void(0)" class="d-inline-block text-muted fas fa-cloud">
                 <small class="align-middle">
@@ -69,9 +69,9 @@
           <div class="raised card bg-light mb-3 postcard">
             <div class="card-header">
                 {{profilePic}}
-                <span>{{username}} has Posted!</span>
+                <span>{{username}} has posted!</span>
                 </div>
-            <div class="card-body">{{Post}}</div>
+            <div class="card-body">{{post}}</div>
             <div class="card-footer">
               <i href="javascript:void(0)" class="d-inline-block text-muted fas fa-cloud">
                 <small class="align-middle">

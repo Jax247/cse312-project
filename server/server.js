@@ -1125,7 +1125,7 @@ function sendProfile(path, token) {
     console.log("TOKENNAME: " + tokenUsers.get(token).username);
     if (tempName === tokenUsers.get(token).username) {
         console.log("ADDING FORM");
-        content = content.replace('{{upload}}',
+        content = content.replace(/{{upload}}/g,
             '<form action="/profilePic" id="image-form" method="post" enctype="multipart/form-data">\r\n' +
             '<label for="form-file">Image: </label>\r\n' +
             '<input id="form-file" type="file" name="upload" />\r\n' +
@@ -1133,14 +1133,14 @@ function sendProfile(path, token) {
             '<input type="submit" value="Submit" />\r\n' +
             '</form>\r\n');
     } else {
-        content = content.replace('{{upload}}', '');
+        content = content.replace(/{{upload}}/g, '');
     }
     let user = allUsers.get(tempName);
     let imageSrc = '"/pictureProfiles/defaultProfile.jpg"';
     if (user.hasProfilePic) {
         imageSrc = '"/pictureProfiles/' + user.username + '.jpg"';
     }
-    content = content.replace('{{profilePic}', '<img id="profilePicture" src=' + imageSrc + ' alt="default.jpg"/>\r\n');
+    content = content.replace(/{{profilePic}}/g, '<img id="profilePicture" src=' + imageSrc + ' alt="default.jpg"/>\r\n');
     let usernameRender = "<p>" + user.username + "</p>";
     let postIds = "";
     let post;
@@ -1149,8 +1149,8 @@ function sendProfile(path, token) {
         let jPost = JSON.parse(messageHistory[parseInt(post)].data);
         postIds += '<p>' + jPost.comment + '</p> \r\n\r\n'
     }
-    content = content.replace('{{username}}', usernameRender)
-        .replace('{{post}}', postIds);
+    content = content.replace(/{{username}}/g, usernameRender)
+        .replace(/{{post}}/g, postIds);
     return "HTTP/1.1 200 OK\r\n" +
         "Content-Type: text/html\r\n" +
         "Content-Length: " + content.length + "\r\n\r\n" +
