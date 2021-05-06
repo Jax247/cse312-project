@@ -25,9 +25,19 @@ function sendLike(id) {
 function updateLike(like) {
     console.log("UPDATING LIKE");
     const jLike = JSON.parse(like.data);
-    let updateElement = document.getElementById('like' + jLike['messageId'].toString());
+    let updateElement = document.getElementById('likeIcon' + jLike['messageId'].toString());
+    document.getElementById('like' + jLike.messageId).innerHTML = jLike.totalLike;
     console.log(updateElement);
-    updateElement.innerHTML = jLike['totalLike'];
+    if (jLike.updateLike === "update") {
+        if (jLike.doesLike) {
+            console.log("DOES LIKE")
+            updateElement.innerHTML = 'favorite';
+        } else {
+            console.log("DOES NOT LIKE")
+
+            updateElement.innerHTML = 'favorite_border';
+        }
+    }
 }
 
 //Use createConvo button to create the button
@@ -46,9 +56,10 @@ function addMessage(message) {
         updateLike(message);
     } else if (chatMessage.activeUsers > 1) {
         renderActiveUsers(JSON.parse(chatMessage.userId));
+    } else if (chatMessage.yourLikes) {
+        yourLikes = new Set(JSON.parse(chatMessage.yourLikes));
     } else {
         let contentContainer = document.createElement('div');
-        console.log("ID: " + chatMessage['id']);
         contentContainer.className = "card bg-light mb-3";
         contentContainer.id = "messsage" + chatMessage['id'];
         let cardHead = document.createElement('div');
@@ -77,19 +88,24 @@ function addMessage(message) {
         startForm.appendChild(startButton);
 
         let like = document.createElement('i');
-        like.id = 'likeIcon';
+        like.id = 'likeIcon' + chatMessage.id;
         like.addEventListener('click', function () {
             sendLike(chatMessage['id']);
         });
         //like.onclick = sendLike(chatMessage['id']);
+        if (yourLikes.has(chatMessage.id)) {
+            like.innerHTML = 'favorite';
+        } else {
+            like.innerHTML = 'favorite_border';
+
+        }
         like.className = 'material-icons';
-        like.innerHTML = 'favorite';
         contentContainer.innerHTML += "<b>" + chatMessage['userID'] + "</b>: " + chatMessage["comment"] + "<br/> \r\n";
         let profilePicSrc = '"pictureProfiles/defaultProfile.jpg"';
         if (chatMessage['hasProfilePic']) {
             profilePicSrc = '"pictureProfiles/' + chatMessage['userID'] + '.jpg"';
         }
-        
+
 
         contentContainer.innerHTML += '<img id="profilePic" class="pfp" src=' + profilePicSrc + '>';
 
@@ -111,7 +127,6 @@ function addImage(image) {
     var blob = new Blob([bytes.buffer]);
     reader.addEventListener('loadend', () => {
         // reader.result contains the contents of blob as a typed array
-        console.log(reader.result);
         var img = document.createElement('img');
         chat.appendChild(img);
         img.src = "data:image/jpg;base64," + btoa(reader.result);
@@ -158,6 +173,7 @@ function createConvoButton(name) {
 let socket;
 let token;
 let userName;
+let yourLikes;
 
 function startWebsocket() {
     console.log("STARTING SOCKET");
@@ -173,13 +189,9 @@ function startWebsocket() {
 
 // Call the addMessage function whenever data is received from the server over the WebSocket
     socket.addEventListener("message", function (event) {
-        console.log("EVETNt");
-        console.log(typeof event.data)
         if (typeof event.data === 'string') {
 
-            console.log("IS TEXT");
             // text frame
-            console.log(event.data.toString());
             addMessage(event);
 
         } else {

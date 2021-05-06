@@ -106,8 +106,10 @@ net.createServer(function (socket) {
     let tempHeaders;
     let contentLength;
     socket.on('end', function (list) {
+
     });
     socket.on("error", function (list) {
+
     });
     socket.on('close', function (list) {
         //Go thru tokenList and delete pair with matching Socket
@@ -257,8 +259,12 @@ function sendCookie(username, socket) {
         Math.random().toString(36).substr(2, 20) +
         Math.random().toString(36).substr(3, 9);
     if (allUsers.has(username)) {
+        if (tokenUsers.has(allUsers.get(username).sessionToken)) {
+            tokenUsers.delete(allUsers.get(username).sessionToken);
+        }
         tokenUsers.set(token, allUsers.get(username));
         allUsers.get(username).sessionToken = token;
+
     }
     let content = fs.readFileSync('./index.html');
     let cookie = "HTTP/1.1 301 OK\r\n" +
@@ -471,10 +477,18 @@ function handleAsWebsocket(socket, data) {
                 allUsers.get(tokenUsers.get(currUserToken).username).location = 'index';
                 allUsers.get(tokenUsers.get(currUserToken).username).socket = socket;
 
-                let tempLikes = JSON.stringify({yourLikes: Array.from(tokenUsers.get(currUserToken).likes.keys())});
+
+                let likeList = JSON.stringify(Array.from(tokenUsers.get(currUserToken).likes.keys()));
+                let tempLikes = JSON.stringify({yourLikes: likeList});
                 ////console.log(tempLikes)
                 socket.write(createWebsocketFrame(new Message(tempLikes, frameType)));
                 //console.log("UDATED");
+
+
+                    for (let i = 0; i < messageHistory.length; i++) {
+                        socket.write(createWebsocketFrame(messageHistory[i]));
+                    }
+
                 return;
 
             }else if (tokenUsers.has(jTemp.profileNotify)) {
@@ -532,6 +546,7 @@ function handleAsWebsocket(socket, data) {
             ////console.log("WE ARE IN LOOP");
             ////console.log(value.socket.remoteAddress);
             ////console.log(value.socket.remotePort);
+
             value.socket.write(sendFrame);
         }
 
@@ -691,6 +706,7 @@ function handleLike(like) {
         totalLikes = messageHistory[parseInt(like.messageId)].likeCount;
         like["totalLike"] = totalLikes;
         like["doesLike"] = doesLike;
+        like['updateLike'] = 'update';
         let tempToken = like['sessionToken'];
         delete like['sessionToken'];
 
@@ -699,6 +715,7 @@ function handleLike(like) {
 
 
         delete like['doesLike'];
+        delete like['updateLike'];
         //console.log(like);
         //console.log("GETTING LIKE");
         //console.log(messageHistory);
@@ -1087,11 +1104,7 @@ function paths(check, socket, port, lines) {
             response = createHandshake(socket, lines);
             upgradedUsers.set(socket.remoteAddress + socket.remotePort.toString(), new Client(socket.remoteAddress, socket.remotePort, expr, socket));
 
-            if (expr === '/websocket') {
-                for (let i = 0; i < messageHistory.length; i++) {
-                    socket.write(createWebsocketFrame(messageHistory[i]));
-                }
-            }
+
             return;
         case '/profile':
             //console.log("SENDING PROFILE");
@@ -1155,8 +1168,6 @@ function sendProfile(path, token) {
         "Content-Type: text/html\r\n" +
         "Content-Length: " + content.length + "\r\n\r\n" +
         content;
-
-
 }
 
 function createHandshake(socket, lines) {
