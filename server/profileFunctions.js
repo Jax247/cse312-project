@@ -152,18 +152,15 @@ function createConvoButton(name) {
 
 let socket;
 let token;
-let userName;
 
 function startWebsocket() {
     console.log("STARTING SOCKET");
     token = getCookie("sessionToken");
-    userName = getCookie("yourName");
-    socket = new WebSocket('ws://' + window.location.host + '/websocket');
+    socket = new WebSocket('ws://' + window.location.host + '/profileWebsocket');
 
-    document.getElementById('createContainer').appendChild(createConvoButton(userName))
 
     socket.onopen = function (event) {
-        socket.send(JSON.stringify({'notify': token}));
+        socket.send(JSON.stringify({'profileNotify': token}));
     };
 
 // Call the addMessage function whenever data is received from the server over the WebSocket

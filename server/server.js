@@ -23,12 +23,13 @@ availPaths.set('/image-upload', 'redirect');
 availPaths.set('/utf.txt', 'content')
 availPaths.set('/style.css', 'content');
 availPaths.set('/function.js', 'content');
-availPaths.set('/profile/function.js', 'content');
+availPaths.set('/profile/profileFunctions.js', 'content');
 availPaths.set('/conversation/dmFunctions.js', 'content');
 availPaths.set('/images', 'content');
 availPaths.set('/image', 'content');
 availPaths.set('/User_Uploads', 'content');
 availPaths.set('/websocket', '/websocket');
+availPaths.set('/profileWebsocket', '/profileWebsocket');
 availPaths.set('/websocketDM', '/websocketDM');
 availPaths.set('/register', 'redirect');
 availPaths.set('/registerNewAccount', 'redirect');
@@ -49,7 +50,7 @@ content.set('/image', ["./image", "image/jpeg \r\nX-Content-Type-Options: nosnif
     true, "utf8"])
 content.set("/style.css", ["./style.css", "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/function.js", ["./function.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
-content.set("/profile/function.js", ["./function.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
+content.set("/profile/profileFunctions.js", ["./profileFunctions.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/Authentication/Auth/auth.js", ["./Authentication/Auth/auth.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/conversation/dmFunctions.js", ["./dmFunctions.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/images", ["null", "text/html; \r\nX-Content-Type-Options: nosniff", false, "utf8"])
@@ -469,12 +470,25 @@ function handleAsWebsocket(socket, data) {
 
                 let tempLikes = JSON.stringify({yourLikes: Array.from(tokenUsers.get(currUserToken).likes.keys())});
                 ////console.log(tempLikes)
-
                 socket.write(createWebsocketFrame(new Message(tempLikes, frameType)));
-
                 //console.log("UDATED");
                 return;
 
+            }else if (tokenUsers.has(jTemp.profileNotify)) {
+
+                currUserToken = jTemp['profileNotify'];
+
+                tokenUsers.get(jTemp.profileNotify).setSocket(socket);
+                //upgradedUsers.get(socket.remoteAddress + socket.remotePort.toString()).sockType = '/websocket';
+                upgradedUsers.get(socket.remoteAddress + socket.remotePort.toString())
+                    .setUserId(tokenUsers.get(jTemp.profileNotify).username.toString());
+
+                sendActiveUsers();
+                ////console.log(upgradedUsers)
+
+                allUsers.get(tokenUsers.get(currUserToken).username).location = 'profile';
+                allUsers.get(tokenUsers.get(currUserToken).username).socket = socket;
+                return;
             } else {
                 return;
             }
@@ -560,15 +574,16 @@ function handleDirectMessage(jObject) {
         //user Is on
         if (tokenUsers.has(recvUser.sessionToken)) {
             if (recvUser.location === 'websocketDM/' + senderName) {
-                //console.log("USER AT DM");
+                console.log("USER AT DM");
                 recvUser.socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
                 //else if (recvUser.location === 'index')
             } else {
+                console.log("USER NOTIFIED")
                 recvUser.socket.write(createWebsocketFrame(new Message(JSON.stringify({hasMessage: senderName}), 'text')));
 
             }
         } else {
-            //console.log("USER OFFLINE");
+            console.log("USER OFFLINE");
         }
         tokenUsers.get(jObject.senderToken).socket.write(createWebsocketFrame(new Message(messageToSave, 'text')));
         ////console.log(sendUser);
@@ -712,12 +727,6 @@ function importFromMongo() {
             }
 
         });
-
-        //console.log("MESSAGES")
-
-
-        //console.log(messageHistory);
-
         var users = dbo.collection('users').find();
         users.each(function (err, document) {
             if (document) {
@@ -732,9 +741,8 @@ function importFromMongo() {
                     newUser.posts = JSON.parse(document.posts);
                 }
                 if (document.likes !== "" && document.likes) {
-                    newUser.likes = JSON.parse(document.likes);
+                    newUser.likes = new Set(JSON.parse(document.likes));
                 }
-
 
                 allUsers.set(document.username, newUser);
                 console.log("ALL USERS: ", allUsers);
@@ -1072,10 +1080,11 @@ function paths(check, socket, port, lines) {
             break;
         case '/websocketDM':
         case "/websocket":
+        case '/profileWebsocket':
             response = createHandshake(socket, lines);
             upgradedUsers.set(socket.remoteAddress + socket.remotePort.toString(), new Client(socket.remoteAddress, socket.remotePort, expr, socket));
 
-            if (expr !== '/websocketDM') {
+            if (expr === '/websocket') {
                 for (let i = 0; i < messageHistory.length; i++) {
                     socket.write(createWebsocketFrame(messageHistory[i]));
                 }

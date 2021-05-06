@@ -14,6 +14,10 @@ class User{
     //add new person to who you chat with
     // Value of this usernameId is the array of messages to eachother
 
+    setLikes(likeSet) {
+        this.likes = likeSet;
+    }
+
     setChats(chats) {
         this.chats = chats;
 }
