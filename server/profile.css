@@ -16,6 +16,12 @@ body {
   border-radius: 50%;
 }
 
+.postpfp {
+    height: 50px;
+    width: 50px;
+    border-radius: 50%; 
+}
+
 .postcard {
   width: 50%;
   color: #000;
@@ -114,3 +120,18 @@ body {
   display: block;
   width: 10em;
 }
+
+input[type="submit"] {
+    background-color: #135edf;
+    border-radius: 10px;
+    border: none;
+    width: 40%;
+    height: 35px;
+}
+
+#image-form {
+    background-color: #fff;
+    align-items: center;
+    padding: 15px;
+}
+
