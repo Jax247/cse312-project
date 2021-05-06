@@ -1139,11 +1139,11 @@ function sendProfile(path, token) {
     if (tempName === tokenUsers.get(token).username) {
         console.log("ADDING FORM");
         content = content.replace(/{{upload}}/g,
-            '<form action="/profilePic" id="image-form" method="post" enctype="multipart/form-data">\r\n' +
-            '<label for="form-file">Image: </label>\r\n' +
+            '<form action="/profilePic" id="image-form" class="raised card bg-light mb-3 postcard" method="post" enctype="multipart/form-data">\r\n' +
+            '<label for="form-file">Change Profile Picture </label>\r\n' +
             '<input id="form-file" type="file" name="upload" />\r\n' +
             '<br/>\r\n' +
-            '<input type="submit" value="Submit" />\r\n' +
+            '<input class="raised" type="submit" value="Submit" />\r\n' +
             '</form>\r\n');
     } else {
         content = content.replace(/{{upload}}/g, '');
@@ -1153,17 +1153,39 @@ function sendProfile(path, token) {
     if (user.hasProfilePic) {
         imageSrc = '"/pictureProfiles/' + user.username + '.jpg"';
     }
-    content = content.replace(/{{profilePic}}/g, '<img id="profilePicture" src=' + imageSrc + ' alt="default.jpg"/>\r\n');
+    content = content.replace(/{{profilePic}}/g, '<img id="profilePicture" class="profilepic" src=' + imageSrc + ' alt="default.jpg"/>\r\n');
     let usernameRender = "<p>" + user.username + "</p>";
     let postIds = "";
     let post;
     for (let i = 0; i < user.posts.length; i++) {
+        console.log(user.posts[i])
         post = parseInt(user.posts[i]);
         let jPost = JSON.parse(messageHistory[parseInt(post)].data);
-        postIds += '<p>' + jPost.comment + '</p> \r\n\r\n'
+        console.log(jPost)
+        postIds += `<div class="raised card bg-light mb-3 postcard">
+    <div class="card-header">
+    <img id="profilePicture" class="postpfp" src=`+ imageSrc +` alt="default.jpg"/>
+        <img id="postpfp" class=postpfp/>
+        <span> `+ jPost.userID+` has posted!</span>
+        </div>
+    <div class="card-body">` + jPost.comment + `</div>
+    <div class="card-footer">
+      <i href="javascript:void(0)" class="d-inline-block text-muted fas fa-cloud">
+        <small class="align-middle">
+          <strong>`+jPost.likeCount+`</strong> Likes</small>
+        </i>
+      </div>
+    </div>
+    <br/>
+    \r\n\r\n
+  `
     }
+
+    
+
+
     content = content.replace(/{{username}}/g, usernameRender)
-        .replace(/{{post}}/g, postIds);
+        .replace(/{{posts}}/g, postIds);
     return "HTTP/1.1 200 OK\r\n" +
         "Content-Type: text/html\r\n" +
         "Content-Length: " + content.length + "\r\n\r\n" +

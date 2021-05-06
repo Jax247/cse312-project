@@ -43,11 +43,65 @@ function updateLike(like) {
 //Use createConvo button to create the button
 // that will link users to the chat screen
 function renderActiveUsers(listOfUsers) {
-    // Render list of incoming usernames in a ul tag
-    console.log(listOfUsers);
+    let activeUserCont
+    let AUentry
+    let AUentry_name
+    let svg
+    let path
 
-    // cannot do until issue with db is resolved
+    // Render list of incoming usernames in a ul tag
+    console.log("List of users:\n", listOfUsers);
+
+    let Activelist = document.getElementById("misc");
+
+    // Add each string to the list by contructing the html elements to insert into the misc lane
+
+    for (let index = 0; index < array.length; index++) {
+        // activeUserCont = document.createElement("div");
+        // activeUserCont.id = "activeUsers";
+        // activeUserCont.class = "activeUsers";
+
+        // AUentry = document.createElement('div');
+        // AUentry.class = "accordion-body";
+
+        // AUentry_name = document.createElement('span');
+        // AUentry_name.class = "AUentry_name";
+        // AUentry_name.innerHTML = username
+
+        // svg = document.createElement('svg');
+        // svg.class = "svgi";
+        // path = document.createElement('path');
+        // path.class = "path";
+
+        // create a jQuery-boosted div
+        // $svg = $('<svg></svg>');
+        // $svg.attr({
+        //     xmlns: "http://www.w3.org/2000/svg",
+        //     width: 46,
+        //     height: 46,
+        //     fill: "green",
+        //     class: "bi bi-dot",
+        //     viewBox: "0 0 16 16"
+        // });
+        // alert($div.attr('class'));
+        console.log(
+"loop")
+
+        Activelist.append(`
+        <div class="accordion-body">
+            <span class="AUentry_name">`+ listOfUsers[index] +`</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="46" height="46" fill="green" class="bi bi-dot" viewBox="0 0 16 16">
+            <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+            </svg>
+        </div>
+        `);
+    }
+
+
 }
+
+
+
 
 
 function addMessage(message) {
@@ -58,8 +112,12 @@ function addMessage(message) {
         renderActiveUsers(JSON.parse(chatMessage.userId));
     } else if (chatMessage.yourLikes) {
         yourLikes = new Set(JSON.parse(chatMessage.yourLikes));
+    } else if (chatMessage.activeUsers > 0) {
+       console.log(chatMessage);
+        renderActiveUsers(chatMessage.userId);
     } else {
         let contentContainer = document.createElement('div');
+        console.log("ID: " + chatMessage['id']);
         contentContainer.className = "card bg-light mb-3";
         contentContainer.id = "messsage" + chatMessage['id'];
         let cardHead = document.createElement('div');
@@ -105,7 +163,7 @@ function addMessage(message) {
         if (chatMessage['hasProfilePic']) {
             profilePicSrc = '"pictureProfiles/' + chatMessage['userID'] + '.jpg"';
         }
-
+        
 
         contentContainer.innerHTML += '<img id="profilePic" class="pfp" src=' + profilePicSrc + '>';
 
@@ -127,6 +185,7 @@ function addImage(image) {
     var blob = new Blob([bytes.buffer]);
     reader.addEventListener('loadend', () => {
         // reader.result contains the contents of blob as a typed array
+        console.log(reader.result);
         var img = document.createElement('img');
         chat.appendChild(img);
         img.src = "data:image/jpg;base64," + btoa(reader.result);
@@ -189,9 +248,13 @@ function startWebsocket() {
 
 // Call the addMessage function whenever data is received from the server over the WebSocket
     socket.addEventListener("message", function (event) {
+        console.log("EVETNt");
+        console.log(typeof event.data)
         if (typeof event.data === 'string') {
 
+            console.log("IS TEXT");
             // text frame
+            console.log(event.data.toString());
             addMessage(event);
 
         } else {
