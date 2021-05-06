@@ -2,18 +2,88 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <script src="profileFunctions.js"></script>
-
-
-
-
-
-    <title>Title</title>
+    <script src="function.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+    <link rel="stylesheet" href="profile.css">
+    <link rel="stylesheet" href="hi.css">
+    <link rel="stylesheet" href="style.css">
+    <title>CSE 312 Project</title>
 </head>
 <body onload="startWebsocket();"  id="bodyCont">
-{{profilePic}}
-{{upload}}
-{{username}}
-{{post}}
+<div id="wrapper" class="wrapper" >
+
+    <!-- Header -->
+    <header id="header">
+        <div class="info">
+            <span id="avatar" class="avatar"></span>
+            <h1>{{username}}</h1>
+        </div>
+      <br/>
+    </header>
+
+    <!-- Main -->
+    <div id="main" class="main">
+
+      <div class="raised card bg-light mb-3 postcard">
+          <div class="card-header">
+              {{profilePic}}
+              <span>{{username}} has Posted!</span>
+              </div>
+          <div class="card-body">{{Post}}</div>
+          <div class="card-footer">
+            <i href="javascript:void(0)" class="d-inline-block text-muted fas fa-cloud">
+              <small class="align-middle">
+                <strong>123</strong> Likes</small>
+              </i>
+            </div>
+        </div>
+
+        <div class="raised card bg-light mb-3 postcard">
+            <div class="card-header">
+                {{profilePic}}
+                <span>{{username}} has Posted!</span>
+                </div>
+            <div class="card-body">{{Post}}</div>
+            <div class="card-footer">
+              <i href="javascript:void(0)" class="d-inline-block text-muted fas fa-cloud">
+                <small class="align-middle">
+                  <strong>123</strong> Likes</small>
+                </i>
+              </div>
+          </div>
+
+          <div class="raised card bg-light mb-3 postcard">
+            <div class="card-header">
+                {{profilePic}}
+                <span>{{username}} has Posted!</span>
+                </div>
+            <div class="card-body">{{Post}}</div>
+            <div class="card-footer">
+              <i href="javascript:void(0)" class="d-inline-block text-muted fas fa-cloud">
+                <small class="align-middle">
+                  <strong>123</strong> Likes</small>
+                </i>
+              </div>
+          </div>
+
+          <div class="raised card bg-light mb-3 postcard">
+            <div class="card-header">
+                {{profilePic}}
+                <span>{{username}} has Posted!</span>
+                </div>
+            <div class="card-body">{{Post}}</div>
+            <div class="card-footer">
+              <i href="javascript:void(0)" class="d-inline-block text-muted fas fa-cloud">
+                <small class="align-middle">
+                  <strong>123</strong> Likes</small>
+                </i>
+              </div>
+          </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+
 </body>
 </html>

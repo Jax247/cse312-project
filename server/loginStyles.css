@@ -180,7 +180,7 @@ input[name="register_input"] {
 
 /* ANIMATIONS */
 
-/* Simple CSS3 Fade-in-down Animation */
+/* Simple Fade-in-down Animation */
 .fadeInDown {
   -webkit-animation-name: fadeInDown;
   animation-name: fadeInDown;

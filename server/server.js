@@ -39,6 +39,7 @@ availPaths.set("/Authentication/Auth/styles.css", 'content');
 availPaths.set("/Authentication/Registration/styles.css", 'content');
 availPaths.set("/Authentication/Auth/auth.js", 'content');
 availPaths.set("pictureProfiles/defaultProfile.jpg", 'content');
+availPaths.set("/profile/profile.css", 'content');
 
 
 let content = new Map();
@@ -57,7 +58,9 @@ content.set("/images", ["null", "text/html; \r\nX-Content-Type-Options: nosniff"
 content.set('/chatScreen', []);
 content.set('/profile', 'content');
 content.set("/Authentication/Auth/styles.css", ["./Authentication/Auth/styles.css",
-    "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
+"text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
+
+content.set("/profile/profile.css", ["./profile.css", "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 
 
 let redirects = new Map();
@@ -80,7 +83,7 @@ let tokenUsers = new Map();
 
 
 var url = "mongodb://localhost:27017/";
-//var url = 'mongodb://mongo:27017';
+// var url = 'mongodb://mongo:27017';
 
 MongoClient.connect(url, function (err, db) {
     if (err) throw err;
