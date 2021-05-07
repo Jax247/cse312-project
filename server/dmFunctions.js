@@ -5,7 +5,9 @@ function startUp() {
 
 function addMessage(message) {
     const chatMessage = JSON.parse(message.data);
-    if (chatMessage.messageContent) {
+    if (chatMessage.hasMessage) {
+        alert("You have a message from " + chatMessage.hasMessage);
+    }else if (chatMessage.messageContent) {
         let contentContainer = document.createElement('div');
         contentContainer.id = 'chatContainer';
         contentContainer.innerHTML += "<b id='message'>" + chatMessage['sender'] + "</b>: " + chatMessage["messageContent"] + "<br/> \r\n";

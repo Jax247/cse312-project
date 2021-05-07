@@ -45,6 +45,9 @@ function addMessage(message) {
         updateLike(message);
     } else if (chatMessage.activeUsers > 1) {
         renderActiveUsers(JSON.parse(chatMessage.userId));
+    } else if (chatMessage.hasMessage) {
+        alert("You have a message from " + chatMessage.hasMessage);
+
     } else {
         let contentContainer = document.createElement('div');
         console.log("ID: " + chatMessage['id']);

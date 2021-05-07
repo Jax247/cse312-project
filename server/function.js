@@ -116,8 +116,10 @@ function addMessage(message) {
         renderActiveUsers(chatMessage.userId);
     } else if (chatMessage.yourLikes) {
         yourLikes = new Set(JSON.parse(chatMessage.yourLikes));
-    }  else {
-       console.log(chatMessage);
+    } else if (chatMessage.hasMessage) {
+        alert("You have a message from " + chatMessage.hasMessage);
+    } else {
+        console.log(chatMessage);
         let contentContainer = document.createElement('div');
         console.log("ID: " + chatMessage['id']);
         contentContainer.className = "raised card bg-light mb-3";
@@ -164,7 +166,7 @@ function addMessage(message) {
         if (chatMessage['hasProfilePic']) {
             profilePicSrc = '"pictureProfiles/' + chatMessage['userID'] + '.jpg"';
         }
-        
+
 
         let postOwner = document.createElement('a');
         postOwner.innerHTML = '<img id="" class="pfp" src=' + profilePicSrc + '> ' + chatMessage['userID'] + ' Posted!';
@@ -173,12 +175,11 @@ function addMessage(message) {
         });
 
 
-
         // card header
         let cardHead = document.createElement('span');
         cardHead.className = "card-header";
         contentContainer.prepend(cardHead);
-        cardHead.append(postOwner)
+        cardHead.append(postOwner);
 
         // contentContainer.innerHTML += '<img id="profilePic" class="pfp" src=' + profilePicSrc + '>';
 
