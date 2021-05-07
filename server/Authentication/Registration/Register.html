@@ -39,10 +39,11 @@
         <!-- Login/Registration Form -->
 
         <form action="/registerNewAccount" id="comment-form" method="post" enctype="multipart/form-data">
-            <label for="text-form-name">Name: </label>
+            <label for="text-form-name">Username: </label>
             <input id="text-form-name" type="text" name="email"><br/>
-            <label for="form-comment">Comment: </label>
-            <input id="form-comment" type="text" name="password">
+            <label for="form-comment">Password: </label>
+            <input id="form-comment" type="password" name="password">
+          {{loginNote}}
             <input type="submit" value="Submit">
         </form>
         

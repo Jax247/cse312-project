@@ -58,7 +58,7 @@ content.set("/images", ["null", "text/html; \r\nX-Content-Type-Options: nosniff"
 content.set('/chatScreen', []);
 content.set('/profile', 'content');
 content.set("/Authentication/Auth/styles.css", ["./Authentication/Auth/styles.css",
-"text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
+    "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 
 content.set("/profile/profile.css", ["./profile.css", "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 
@@ -159,7 +159,7 @@ net.createServer(function (socket) {
                     extendedBuffer = [];
                     tempHeaders = [];
                 } else {
-                    console.log(requestPath)
+                    //console.log(requestPath)
                     notLoggedInHandler(requestPath, socket, port, lines, extendedBuffer);
                 }
             }
@@ -183,23 +183,29 @@ function notLoggedInHandler(path, socket, port, lines, data) {
         case '/registerNewAccount':
             var formAsList = handleMultiPart(data, lines);
             if (formAsList.length === 2) {
-                // isValidUsernameAndPassword
-                var userFound = usernameExists(formAsList[0].content.toString());
-                if (!userFound) {
-                    let userName = formAsList[0].content.toString().replace(/&/g, '&amp;')
-                        .replace(/</g, "&lt;")
-                        .replace(/>/g, "&gt;");
-                    let password = formAsList[1].content.toString().replace(/&/g, '&amp;')
-                        .replace(/</g, "&lt;")
-                        .replace(/>/g, "&gt;");
-                    createUserInDB(userName, password, socket);
-                    return;
+                let userName = formAsList[0].content.toString().replace(/&/g, '&amp;')
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+                let password = formAsList[1].content.toString().replace(/&/g, '&amp;')
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+                var userFound = usernameExists(userName);
+                if (password.length >= 4 && userName.length >= 4) {
+
+                    if (!userFound) {
+                        createUserInDB(userName, password, socket);
+                        return;
+                    } else {
+                        response = buildHtmlResponse('./Authentication/Registration/Register.html', [['{{loginNote}}', '<p> Username already exists </p>\r\n']]);
+                    }
+                } else {
+                    response = buildHtmlResponse('./Authentication/Registration/Register.html', [['{{loginNote}}', '<p> Password and Username must be at least 4 characters long</p>\r\n']]);
                 }
             }
-            break
+            break;
         case '/register?':
             console.log("SENDING REGISTER");
-            response = buildHtmlResponse('./Authentication/Registration/Register.html', []);
+            response = buildHtmlResponse('./Authentication/Registration/Register.html', [['{{loginNote}}', '']]);
             break;
         case '/loginForm':
             console.log("LOGIN");
@@ -213,25 +219,22 @@ function notLoggedInHandler(path, socket, port, lines, data) {
                     .replace(/</g, "&lt;")
                     .replace(/>/g, "&gt;");
                 if (allUsers.has(userName)) {
-                    console.log("CHECKING");
                     bcrypt.compare(password, allUsers.get(userName).password, function (err, result) {
                         if (result) {
-                            console.log("WE GOOD");
                             sendCookie(userName, socket);
                             valid = true;
                             return true;
                         } else {
                             response = buildHtmlResponse('./Authentication/Login/login.html', [['{{loginNote}}', '<p> Invalid username/password </p>\r\n']]);
                             socket.write(response);
-                            console.log("WE NOT GOOD");
                             return false;
                         }
                     });
                 } else {
-                    socket.write(buildHtmlResponse('./Authentication/Login/login.html', [['{{loginNote}}', '']]));
+                    socket.write(buildHtmlResponse('./Authentication/Login/login.html', [['{{loginNote}}', '<p> Invalid username/password </p>\r\n']]));
                 }
             } else {
-                socket.write(buildHtmlResponse('./Authentication/Login/login.html', [['{{loginNote}}', '']]));
+                socket.write(buildHtmlResponse('./Authentication/Login/login.html', [['{{loginNote}}', '<p> Invalid username/password </p>\r\n']]));
             }
             //socket.write(buildHtmlResponse('./Authentication/Login/login.html', []));
             // if (!valid) {
@@ -293,7 +296,6 @@ function checkForToken(lines) {
     //console.log("CHECKING FOR COOKEI");
     let cookies = getHeaderInfo('Cookie:', lines);
     ////console.log(getValueFromHeader('sessionToken=', cookies));
-    console.log("FUCKED: " + getValueFromHeader('sessionToken=', cookies))
     return tokenUsers.has(getValueFromHeader('sessionToken=', cookies));
 }
 
@@ -485,13 +487,13 @@ function handleAsWebsocket(socket, data) {
                 //console.log("UDATED");
 
 
-                    for (let i = 0; i < messageHistory.length; i++) {
-                        socket.write(createWebsocketFrame(messageHistory[i]));
-                    }
+                for (let i = 0; i < messageHistory.length; i++) {
+                    socket.write(createWebsocketFrame(messageHistory[i]));
+                }
 
                 return;
 
-            }else if (tokenUsers.has(jTemp.profileNotify)) {
+            } else if (tokenUsers.has(jTemp.profileNotify)) {
 
                 currUserToken = jTemp['profileNotify'];
 
@@ -1164,15 +1166,15 @@ function sendProfile(path, token) {
         console.log(jPost)
         postIds += `<div class="raised card bg-light mb-3 postcard">
     <div class="card-header">
-    <img id="profilePicture" class="postpfp" src=`+ imageSrc +` alt="default.jpg"/>
+    <img id="profilePicture" class="postpfp" src=` + imageSrc + ` alt="default.jpg"/>
         <img id="postpfp" class=postpfp/>
-        <span> `+ jPost.userID+` has posted!</span>
+        <span> ` + jPost.userID + ` has posted!</span>
         </div>
     <div class="card-body">` + jPost.comment + `</div>
     <div class="card-footer">
       <i href="javascript:void(0)" class="d-inline-block text-muted fas fa-cloud">
         <small class="align-middle">
-          <strong>`+jPost.likeCount+`</strong> Likes</small>
+          <strong>` + jPost.likeCount + `</strong> Likes</small>
         </i>
       </div>
     </div>
@@ -1180,8 +1182,6 @@ function sendProfile(path, token) {
     \r\n\r\n
   `
     }
-
-    
 
 
     content = content.replace(/{{username}}/g, usernameRender)
@@ -1208,7 +1208,7 @@ function createHandshake(socket, lines) {
 function buildRedirect(redirect, port) {
     let response = "HTTP/1.1 301 Moved Permanently\r\n"
     //response += "Content-Length: 0\r\n\r\n";
-    response += "Location: /"  + redirect + "\r\n\r\n";
+    response += "Location: /" + redirect + "\r\n\r\n";
     return response
 }
 
