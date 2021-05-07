@@ -98,6 +98,8 @@ function renderActiveUsers(listOfUsers) {
         console.log("loop")
         activeUsers.push(listOfUsers[index])
         Activelist.append(activeUserCont);
+        span.appendChild(createProfileButton(listOfUsers[index]));
+        span.appendChild(createConvoButton(listOfUsers[index]));
     }
     
     
@@ -109,7 +111,8 @@ function addMessage(message) {
     
     if (chatMessage.like === 'sent') {
         updateLike(message);
-    } else if (chatMessage.activeUsers > 1) {
+    } else if (chatMessage.activeUsers > 0) {
+        console.log("LIST OF USERS: " , chatMessage.userId)
         renderActiveUsers(chatMessage.userId);
     } else if (chatMessage.yourLikes) {
         yourLikes = new Set(JSON.parse(chatMessage.yourLikes));
@@ -119,10 +122,10 @@ function addMessage(message) {
         console.log("ID: " + chatMessage['id']);
         contentContainer.className = "raised card bg-light mb-3";
         contentContainer.id = "messsage" + chatMessage['id'];
-        let cardHead = document.createElement('div');
-        cardHead.className = "card-header";
-        cardHead.innerHTML = chatMessage['username'] + " Posted!"; //not username but title
-        contentContainer.appendChild(cardHead);
+        // let cardHead = document.createElement('div');
+        // cardHead.className = "card-header";
+        // cardHead.innerHTML = chatMessage['username'] + " Posted!"; //not username but title
+        // contentContainer.appendChild(cardHead);
         let cardBody = document.createElement('div');
         cardBody.className = "card-body";
 
@@ -156,7 +159,7 @@ function addMessage(message) {
         cardBody.innerHTML += "<b>" + chatMessage['userID'] + "</b><br/> " + chatMessage["comment"] + "<br/> \r\n";
 
         like.className = 'material-icons';
-        contentContainer.innerHTML += "<b>" + chatMessage['userID'] + "</b>: " + chatMessage["comment"] + "<br/> \r\n";
+        //contentContainer.innerHTML += "<b>" + chatMessage['userID'] + "</b>: " + chatMessage["comment"] + "<br/> \r\n";
         let profilePicSrc = '"pictureProfiles/defaultProfile.jpg"';
         if (chatMessage['hasProfilePic']) {
             profilePicSrc = '"pictureProfiles/' + chatMessage['userID'] + '.jpg"';
@@ -228,10 +231,28 @@ function getCookie(cname) {
 
 
 function createConvoButton(name) {
+    let startForm = document.createElement('form');
+
+    startForm.action = "/conversation/" + name;
+    startForm.method = 'post';
+    startForm.enctype = "multipart/form-data";
+    let startButton = document.createElement('input');
+    startButton.type = 'submit';
+    startButton.value = 'Chat';
+    startForm.appendChild(startButton);
+    startButton.id = 'goToConvo';
+    //startButton.innerHTML = 'Message';
+
+
+
+    return startForm;
+}
+
+function createProfileButton(name) {
 
     let button = document.createElement('button');
     button.id = 'goToProfileButton';
-    button.innerHTML = 'Go to profile';
+    button.innerHTML = 'Profile';
 
     button.addEventListener('click', function () {
         location.href = window.location.href + 'profile/' + name;
@@ -251,7 +272,7 @@ function startWebsocket() {
     userName = getCookie("yourName");
     socket = new WebSocket('ws://' + window.location.host + '/websocket');
 
-    document.getElementById('createContainer').appendChild(createConvoButton(userName))
+    document.getElementById('createContainer').appendChild(createProfileButton(userName))
 
     socket.onopen = function (event) {
         socket.send(JSON.stringify({'notify': token}));
