@@ -166,7 +166,7 @@ net.createServer(function (socket) {
         }
     });
 
-}).listen({host: "0.0.0.0", port: 80});
+}).listen({host: "0.0.0.0", port: 8020});
 
 
 //function paths(check, socket, port, lines) {
