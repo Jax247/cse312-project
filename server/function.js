@@ -30,61 +30,64 @@ function updateLike(like) {
     updateElement.innerHTML = jLike['totalLike'];
 }
 
+function containsUser(list, id){
+    list.forEach(user => {
+        if (user === id){
+            return true;
+        }
+    })
+    return false;
+}
+
 //Use createConvo button to create the button
 // that will link users to the chat screen
+let activeUsers = [];
 function renderActiveUsers(listOfUsers) {
     let activeUserCont
     let AUentry
     let AUentry_name
-    let svg
-    let path
+    let span
 
     // Render list of incoming usernames in a ul tag
-    console.log("List of users:\n", listOfUsers);
+    // console.log("List of users:\n", listOfUsers);
 
-    let Activelist = document.getElementById("misc");
+    let Activelist = document.getElementById("list");
+
+    Activelist.innerHTML = "";
 
     // Add each string to the list by contructing the html elements to insert into the misc lane
     
-    for (let index = 0; index < array.length; index++) {
-        // activeUserCont = document.createElement("div");
-        // activeUserCont.id = "activeUsers";
-        // activeUserCont.class = "activeUsers";
+    for (let index = 0; index < listOfUsers.length; index++) {
+        if(containsUser(activeUsers, listOfUsers[index])){
+            console.log("ALREADY ACTIVE")
+            continue;
+        }
+
+        activeUserCont = document.createElement("div");
+        activeUserCont.id = "activeUsers";
+        activeUserCont.class = "activeUsers";
         
-        // AUentry = document.createElement('div');
-        // AUentry.class = "accordion-body";
+        AUentry = document.createElement('div');
+        AUentry.class = "accordion-body";
 
-        // AUentry_name = document.createElement('span');
-        // AUentry_name.class = "AUentry_name";
-        // AUentry_name.innerHTML = username
+        AUentry_name = document.createElement('span');
+        AUentry_name.class = "AUentry_name";
+        AUentry_name.innerHTML = listOfUsers[index];
 
-        // svg = document.createElement('svg');
-        // svg.class = "svgi";
-        // path = document.createElement('path');
-        // path.class = "path";
+        span = document.createElement('span');
+        span.classname = "svgi";
+        span.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="46" height="46" fill="green" class="bi bi-dot" viewBox="0 0 16 16">
+        <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+      </svg>`
 
-        // create a jQuery-boosted div
-        // $svg = $('<svg></svg>');
-        // $svg.attr({
-        //     xmlns: "http://www.w3.org/2000/svg", 
-        //     width: 46,
-        //     height: 46,
-        //     fill: "green",
-        //     class: "bi bi-dot",
-        //     viewBox: "0 0 16 16"
-        // });
-        // alert($div.attr('class'));
-        console.log(
-"loop") 
-
-        Activelist.append(`
-        <div class="accordion-body">
-            <span class="AUentry_name">`+ listOfUsers[index] +`</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="46" height="46" fill="green" class="bi bi-dot" viewBox="0 0 16 16">
-            <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
-            </svg>
-        </div>
-        `);
+        
+        AUentry.append(AUentry_name);
+        AUentry.append(span)
+        activeUserCont.append(AUentry);
+        
+        console.log("loop") 
+        activeUsers.push(listOfUsers[index])
+        Activelist.append(activeUserCont);
     }
     
     
@@ -100,14 +103,13 @@ function addMessage(message) {
        console.log(chatMessage); 
         renderActiveUsers(chatMessage.userId);
     } else {
+        // content div
         let contentContainer = document.createElement('div');
         console.log("ID: " + chatMessage['id']);
-        contentContainer.className = "card bg-light mb-3";
+        contentContainer.className = "raised card bg-light mb-3";
         contentContainer.id = "messsage" + chatMessage['id'];
-        let cardHead = document.createElement('div');
-        cardHead.className = "card-header";
-        cardHead.innerHTML = chatMessage['username'] + " Posted!"; //not username but title
-        contentContainer.appendChild(cardHead);
+
+        // card body
         let cardBody = document.createElement('div');
         cardBody.className = "card-body";
 
@@ -115,12 +117,6 @@ function addMessage(message) {
         likeCount.id = 'like' + chatMessage['id'].toString();
         likeCount.innerHTML = "LIKES: " + chatMessage['likeCount'];
         let startForm = document.createElement('form');
-        let postOwner = document.createElement('a');
-        postOwner.innerHTML = chatMessage['userID'];
-        postOwner.addEventListener('click', function () {
-            location.href = window.location.href + 'profile/' + chatMessage['userID'];
-        });
-
         startForm.action = "/conversation/" + chatMessage['userID'];
         startForm.method = 'post';
         startForm.enctype = "multipart/form-data";
@@ -137,21 +133,36 @@ function addMessage(message) {
         //like.onclick = sendLike(chatMessage['id']);
         like.className = 'material-icons';
         like.innerHTML = 'favorite';
-        contentContainer.innerHTML += "<b>" + chatMessage['userID'] + "</b>: " + chatMessage["comment"] + "<br/> \r\n";
+        cardBody.innerHTML += "<b>" + chatMessage['userID'] + "</b><br/> " + chatMessage["comment"] + "<br/> \r\n";
         let profilePicSrc = '"pictureProfiles/defaultProfile.jpg"';
         if (chatMessage['hasProfilePic']) {
             profilePicSrc = '"pictureProfiles/' + chatMessage['userID'] + '.jpg"';
         }
-        
 
-        contentContainer.innerHTML += '<img id="profilePic" class="pfp" src=' + profilePicSrc + '>';
+        let card_foot = document.createElement('div')
+        card_foot.className = "card-footer"
+        card_foot.append(like)
 
-        contentContainer.appendChild(cardBody);
-        cardBody.appendChild(like);
-        contentContainer.appendChild(likeCount);
-        contentContainer.appendChild(postOwner);
-        contentContainer.appendChild(startForm);
-        document.getElementById('chat').appendChild(contentContainer);
+        let postOwner = document.createElement('a');
+        postOwner.innerHTML = '<img id="" class="pfp" src=' + profilePicSrc + '> ' + chatMessage['userID'] + ' Posted!';
+        postOwner.addEventListener('click', function () {
+            location.href = window.location.href + 'profile/' + chatMessage['userID'];
+        });
+
+        // card header
+        let cardHead = document.createElement('span');
+        cardHead.className = "card-header";
+        contentContainer.prepend(cardHead);
+        cardHead.append(postOwner)
+
+        // contentContainer.innerHTML += '<img id="profilePic" class="pfp" src=' + profilePicSrc + '>';
+
+        contentContainer.append(cardBody);
+        cardBody.append(like);
+        cardBody.append(likeCount);
+        // cardBody.append(postOwner);
+        cardBody.append(startForm);
+        document.getElementById('chat').prepend(contentContainer);
 
     }
 }
