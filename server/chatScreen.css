@@ -1,0 +1,201 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    background: linear-gradient(to right, #6fb0e2, #7bb7df);
+    font-family: Arial, Helvetica, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+h3{
+    color: #072fb1;
+    font-size: 2rem;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+div {
+    align-items: center;
+}
+
+img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+}
+
+/* .clearfix::after {
+    content: "";
+    clear: both;
+    display: table;
+} */
+
+h2,p{
+    color: #072fb1;
+    font-size: 20px;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.background {
+    z-index: 2;
+    min-height: 80vh;
+    width: 60%;
+    background: white;
+    background: linear-gradient(to right bottom, 
+    rgba(255,255,255,0.8), 
+    rgba(255,255,255,0.3)
+    );
+    display: flex;
+    border-radius: 2rem;
+    backdrop-filter: blur(2rem);
+}
+
+.background .segment .bio nav > .active{
+    border-left: 5px solid #072fb1;
+    background: linear-gradient(to right top, 
+    rgba(255, 255, 255, 0.7), 
+    rgba(255,255,255,0.3)
+    );
+}
+
+.bio{
+    padding-top: 100px;
+}
+
+.chatContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+/* #chat {
+    width: 50%;
+} */
+
+.bio > div{
+    background: linear-gradient(to right bottom, #5300ed, #072fb1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    padding:20px;
+    font-size: 20px;
+    font-weight: 500;
+    opacity: 1;
+}
+
+.segment{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(to right bottom, 
+    rgba(255,255,255,0.7), 
+    rgba(255,255,255,0.3)
+    );
+    border-radius: 2rem;
+}
+
+.selfie{
+    padding-top: 100px;
+}
+
+.selfie img{
+    width: 200px;
+    height: 200px;
+}
+
+.selfie h3{
+    padding: 1rem;
+}
+
+.greeting{
+    padding: 50px;
+    flex:1.5;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.background .greeting > .active {
+    opacity: 1;
+}
+
+.greeting h2{
+    font-size: 40px;
+    font-weight: 600;
+    padding-left: 40px;
+    opacity: 0.8;
+}
+.greeting p{
+    color: #072fb1;
+    padding: 40px;
+    text-align:justify;
+    font-size: 19px;
+    opacity: 0.8;
+}
+
+@media screen and (max-width: 1250px){
+    .board {
+        width: 70%;
+    }
+    .selfie img{
+       width: 140px;
+       height: 140px;
+    }
+    .selfie h3{
+        font-size: 25px;
+     }
+     .selfie p{
+        font-size: 18px;
+     }
+     .bio > div{
+         font-size: 18px;
+     }
+     .greeting > div h2{
+         font-size: 25px;
+         padding: 20px;
+     }
+     .greeting > div p{
+        font-size: 18px;
+        padding: 20px;
+        padding-top: 20px;
+    }
+
+}
+
+@media screen and (max-width: 1000px){
+    .board {
+        width: 80%;
+    }
+    .selfie img{
+       width: 120px;
+       height: 120px;
+    }
+    .selfie h3{
+        font-size: 20px;
+     }
+     .selfie p{
+        font-size: 15px;
+     }
+     .bio > div{
+         font-size: 15px;
+     }
+     .greeting > div h2{
+         font-size: 20px;
+         padding: 20px;
+         padding-top: 20px;
+     }
+     .greeting > div p{
+        font-size: 17px;
+        padding: 20px;
+        padding-top: 20px;
+    }
+}
