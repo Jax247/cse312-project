@@ -26,7 +26,7 @@ function updateLike(like) {
     console.log("UPDATING LIKE");
     const jLike = JSON.parse(like.data);
     let updateElement = document.getElementById('likeIcon' + jLike['messageId'].toString());
-    document.getElementById('like' + jLike.messageId).innerHTML = jLike.totalLike;
+    document.getElementById('like' + jLike.messageId).innerHTML = 'LIKES: ' + jLike.totalLike;
     console.log(updateElement);
     if (jLike.updateLike === "update") {
         if (jLike.doesLike) {
