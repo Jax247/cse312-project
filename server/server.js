@@ -83,8 +83,8 @@ let allUsers = new Map();
 let tokenUsers = new Map();
 
 
-//var url = "mongodb://localhost:27017/";
- var url = 'mongodb://mongo:27017';
+var url = "mongodb://localhost:27017/";
+// var url = 'mongodb://mongo:27017';
 
 MongoClient.connect(url, function (err, db) {
     if (err) throw err;
@@ -167,7 +167,7 @@ net.createServer(function (socket) {
         }
     });
 
-}).listen({host: "0.0.0.0", port: 2000});
+}).listen({host: "0.0.0.0", port: 80});
 
 
 //function paths(check, socket, port, lines) {
@@ -191,7 +191,7 @@ function notLoggedInHandler(path, socket, port, lines, data) {
                     .replace(/</g, "&lt;")
                     .replace(/>/g, "&gt;");
                 var userFound = usernameExists(userName);
-                if (password.length >= 4 && userName.length >= 4) {
+                if (password.length >= 4 && userName.length >= 4 && !userName.includes(" ")) {
 
                     if (!userFound) {
                         createUserInDB(userName, password, socket);
