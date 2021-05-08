@@ -32,7 +32,6 @@ function addMessage(message) {
 }
 
 function sendMessage() {
-    const chatName = document.getElementById("chat-name").value;
     const chatBox = document.getElementById("chat-comment");
     const comment = chatBox.value;
     chatBox.value = "";
