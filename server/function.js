@@ -120,30 +120,38 @@ function addMessage(message) {
         alert("You have a message from " + chatMessage.hasMessage);
     } else {
         console.log(chatMessage);
+        // Main content Container
         let contentContainer = document.createElement('div');
         console.log("ID: " + chatMessage['id']);
         contentContainer.className = "raised card bg-light mb-3";
         contentContainer.id = "messsage" + chatMessage['id'];
+
         // let cardHead = document.createElement('div');
         // cardHead.className = "card-header";
         // cardHead.innerHTML = chatMessage['username'] + " Posted!"; //not username but title
         // contentContainer.appendChild(cardHead);
+
+        // Postcard Body
         let cardBody = document.createElement('div');
         cardBody.className = "card-body";
 
+        // likes
         let likeCount = document.createElement('p');
         likeCount.id = 'like' + chatMessage['id'].toString();
         likeCount.innerHTML = "LIKES: " + chatMessage['likeCount'];
+
+
+        // Form
         let startForm = document.createElement('form');
-
-
         startForm.action = "/conversation/" + chatMessage['userID'];
         startForm.method = 'post';
         startForm.enctype = "multipart/form-data";
-        let startButton = document.createElement('input');
-        startButton.type = 'submit';
-        startButton.value = 'Send Chat';
-        startForm.appendChild(startButton);
+
+        // DM button
+        let dmButton = document.createElement('input');
+        dmButton.type = 'submit';
+        dmButton.value = 'Send Chat';
+        startForm.appendChild(dmButton);
 
         let like = document.createElement('i');
         like.id = 'likeIcon' + chatMessage.id;
@@ -158,16 +166,18 @@ function addMessage(message) {
             like.innerHTML = 'favorite_border';
 
         }
-        cardBody.innerHTML += "<b>" + chatMessage['userID'] + "</b><br/> " + chatMessage["comment"] + "<br/> \r\n";
+        cardBody.innerHTML += "<b>" + chatMessage['username'] + "</b><br/> " + chatMessage["comment"] + "<br/> \r\n";
 
         like.className = 'material-icons';
         //contentContainer.innerHTML += "<b>" + chatMessage['userID'] + "</b>: " + chatMessage["comment"] + "<br/> \r\n";
+
+        // Profile picture for header
         let profilePicSrc = '"pictureProfiles/defaultProfile.jpg"';
         if (chatMessage['hasProfilePic']) {
             profilePicSrc = '"pictureProfiles/' + chatMessage['userID'] + '.jpg"';
         }
 
-
+        // link to individuals profile 
         let postOwner = document.createElement('a');
         postOwner.innerHTML = '<img id="" class="pfp" src=' + profilePicSrc + '> ' + chatMessage['userID'] + ' Posted!';
         postOwner.addEventListener('click', function () {

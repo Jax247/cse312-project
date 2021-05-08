@@ -1,25 +1,25 @@
-<!DOCTYPE html>
 <html lang="en">
 <script src="dmFunctions.js"></script>
-
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
-    <div> THIS IS THE CHAT SCREEN</div>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./chatScreen.css" />
+    <title>DM Screen</title>
+    
 </head>
 <body onload="startWebsocket();">
-
-<label for="chat-name">Name: </label>
-<input id="chat-name" type="text" name="name">
-<br/>
-<label for="chat-comment">Comment: </label>
-<input id="chat-comment" type="text" name="comment">
-
-<button onclick="sendMessage()">Chat</button>
-<div id="chat"></div>
-
-
-
+        <section class="background">
+            <div class="segment">
+                <h1>Direct Messages</h1>
+                <br/>
+                <label for="chat-comment">Message: </label>
+                <input id="chat-comment" type="text" name="comment">
+                <button onclick="sendMessage()">Send</button>
+                <br/>
+                <br/>
+                <div id="chat"></div>
+                
+            </div>
+        </section>
 </body>
 </html>

@@ -53,6 +53,7 @@ function addMessage(message) {
         console.log("ID: " + chatMessage['id']);
         contentContainer.className = "card bg-light mb-3";
         contentContainer.id = "messsage" + chatMessage['id'];
+
         let cardHead = document.createElement('div');
         cardHead.className = "card-header";
         cardHead.innerHTML = chatMessage['username'] + " Posted!"; //not username but title
@@ -92,8 +93,9 @@ function addMessage(message) {
             profilePicSrc = '"pictureProfiles/' + chatMessage['userID'] + '.jpg"';
         }
 
-
+        contentContainer.innerHTML += '<div class="clearfix">'
         contentContainer.innerHTML += '<img id="profilePic" class="pfp" src=' + profilePicSrc + '>';
+        
 
         contentContainer.appendChild(cardBody);
         cardBody.appendChild(like);

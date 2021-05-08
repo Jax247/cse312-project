@@ -8,15 +8,21 @@ function addMessage(message) {
     if (chatMessage.hasMessage) {
         alert("You have a message from " + chatMessage.hasMessage);
     }else if (chatMessage.messageContent) {
-        let contentContainer = document.createElement('div');
+        let contentContainer = document.createElement('span');
         contentContainer.id = 'chatContainer';
+        contentContainer.className = "chatContainer";
         contentContainer.innerHTML += "<b id='message'>" + chatMessage['sender'] + "</b>: " + chatMessage["messageContent"] + "<br/> \r\n";
-        let profilePicSrc = '"pictureProfiles/defaultProfile.jpg"';
+        let profilePicSrc = 'pictureProfiles/defaultProfile.jpg';
         if (hasPics.has(chatMessage['sender'])) {
 
-            profilePicSrc = '"pictureProfiles/' + chatMessage['sender'] + '.jpg"';
+            profilePicSrc = 'pictureProfiles/' + chatMessage['sender'] + '.jpg';
         }
-        contentContainer.innerHTML += '<img id="profilePic" src=' + profilePicSrc + '>';
+
+        let img = document.createElement('img');
+        img.className = "profilePic";
+        img.src = profilePicSrc;
+
+        contentContainer.prepend(img);
         document.getElementById('chat').appendChild(contentContainer);
     } else if (chatMessage.hasProfilePic) {
         console.log(chatMessage.hasProfilePic);
@@ -24,8 +30,6 @@ function addMessage(message) {
         chatMessage.hasProfilePic.forEach(val => console.log(val));
     }
 }
-
-
 
 function sendMessage() {
     const chatName = document.getElementById("chat-name").value;
@@ -38,7 +42,6 @@ function sendMessage() {
         socket.send(JSON.stringify({'senderToken': token, 'userRecvid': recvId, 'message': comment, 'dm':true}));
     }
 }
-
 
 function getCookie(cname) {
     var name = cname + "=";
@@ -55,7 +58,6 @@ function getCookie(cname) {
     }
     return "";
 }
-
 
 let socket;
 let token;
@@ -85,13 +87,4 @@ function startWebsocket() {
 
         }
     });
-
-
-    // socket.onmessage(function (type) {
-    //     console.log("MESSAGE EVT");
-    //     console.log(type);
-    //     console.log(type.toString());
-    //
-    // });
-//socket.onmessage = addMessage;
 }

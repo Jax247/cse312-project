@@ -26,6 +26,7 @@ availPaths.set('/function.js', 'content');
 availPaths.set('/profile/profileFunctions.js', 'content');
 availPaths.set('/conversation/dmFunctions.js', 'content');
 availPaths.set('/images', 'content');
+availPaths.set('/chatScreen.css', 'content')
 availPaths.set('/image', 'content');
 availPaths.set('/User_Uploads', 'content');
 availPaths.set('/websocket', '/websocket');
@@ -33,14 +34,13 @@ availPaths.set('/profileWebsocket', '/profileWebsocket');
 availPaths.set('/websocketDM', '/websocketDM');
 availPaths.set('/register', 'redirect');
 availPaths.set('/registerNewAccount', 'redirect');
-availPaths.set('/chatScreen', 'content');
+availPaths.set('/conversation/chatScreen.css', 'content');
 availPaths.set('/profile', 'content');
 availPaths.set("/Authentication/Auth/styles.css", 'content');
 availPaths.set("/Authentication/Registration/styles.css", 'content');
 availPaths.set("/Authentication/Auth/auth.js", 'content');
 availPaths.set("pictureProfiles/defaultProfile.jpg", 'content');
 availPaths.set("/profile/profile.css", 'content');
-
 
 let content = new Map();
 content.set('/hello', ["Hello World!", "text/plain", false, "ascii"]);
@@ -50,12 +50,13 @@ content.set('/utf.txt', ["./utf.txt", "text/plain; charset=UTF-8; " +
 content.set('/image', ["./image", "image/jpeg \r\nX-Content-Type-Options: nosniff",
     true, "utf8"])
 content.set("/style.css", ["./style.css", "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
+content.set("/chatScreen.css", ["./chatScreen.css", "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/function.js", ["./function.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/profile/profileFunctions.js", ["./profileFunctions.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/Authentication/Auth/auth.js", ["./Authentication/Auth/auth.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/conversation/dmFunctions.js", ["./dmFunctions.js", "text/javascript; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set("/images", ["null", "text/html; \r\nX-Content-Type-Options: nosniff", false, "utf8"])
-content.set('/chatScreen', []);
+content.set('/conversation/chatScreen.css', ["./chatScreen.css", "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
 content.set('/profile', 'content');
 content.set("/Authentication/Auth/styles.css", ["./Authentication/Auth/styles.css",
     "text/css; \r\nX-Content-Type-Options: nosniff", true, "utf8"]);
@@ -166,7 +167,7 @@ net.createServer(function (socket) {
         }
     });
 
-}).listen({host: "0.0.0.0", port: 80});
+}).listen({host: "0.0.0.0", port: 2000});
 
 
 //function paths(check, socket, port, lines) {
